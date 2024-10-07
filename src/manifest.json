@@ -1,7 +1,7 @@
 {
     "short_name": "Aria",
     "name": "Aria: Audio Transformer & Recorder",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "author": "cdrani",
     "manifest_version": 3,
     "description": "Transform, Record, and Download Mic & Web Audio with Aria.",
@@ -13,16 +13,19 @@
     },
     "action": {
         "default_icon": {
-            "16": "icons/icon16.png",
-            "32": "icons/icon32.png",
-            "48": "icons/icon48.png",
-            "128": "icons/icon128.png"
+            "32": "icons/icon32.png"
         }
     },
     "background": {
         "type": "module",
-        "service_worker": "src/background.js"
+        "service_worker": "background.js"
     },
     "host_permissions": ["<all_urls>"],
-    "permissions": ["downloads", "storage", "activeTab", "tabCapture"]
+    "permissions": ["downloads", "storage", "activeTab", "tabCapture"],
+    "web_accessible_resources": [
+        {
+            "resources": ["main.html", "main.js", "encoder/*.js", "recorder/*.js", "ui/*.js", "style.css", "worker.js", "lib/*.js"],
+            "matches": ["<all_urls>"]
+        }
+    ]
 }

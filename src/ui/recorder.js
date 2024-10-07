@@ -1,4 +1,4 @@
-export const createRecorder = () => {
+export function createRecorder() {
     const recorder = document.createElement('div')
     recorder.className = 'recorder'
 
@@ -11,7 +11,7 @@ export const createRecorder = () => {
     return recorder
 }
 
-export const createRecorderSection = (title, type) => {
+export function createRecorderSection(title, type) {
     const section = document.createElement('div')
     section.className = `recorder__content`
     section.id = `recorder__${type}`

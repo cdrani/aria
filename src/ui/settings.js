@@ -1,4 +1,4 @@
-export const createSettings = () => {
+export function createSettings() {
     const settings = document.createElement('div')
     settings.className = 'settings'
 
@@ -12,7 +12,7 @@ export const createSettings = () => {
 
     const formatSelect = document.createElement('select')
     formatSelect.id = 'formatSelect'
-    ['webm', 'mp3', 'wav'].forEach(format => {
+    ;['webm', 'mp3', 'wav'].forEach(format => {
         const option = document.createElement('option')
         option.value = format
         option.textContent = format.toUpperCase()

@@ -1,7 +1,9 @@
-import { 
+import {
     updateDownloadLink,
-    resetRecordButton, showRecordingResult,
-    updateRecordingProgress, showRecordingProgress
+    resetRecordButton,
+    showRecordingResult,
+    updateRecordingProgress,
+    showRecordingProgress,
 } from './ui'
 
 let isRecording = false
@@ -16,60 +18,56 @@ export async function toggleRecording(type, originalTab) {
     recordingType = type
 
     const button = document.getElementById(`recorder__${type}__button`)
-    button.textContent = isRecording ? 'Stop' : 'Record'
+    button.textContent = isRecording ? 'Stop' : 'Start'
     button.classList.remove(isRecording ? 'primary' : 'danger')
     button.classList.add(isRecording ? 'danger' : 'primary')
 
-    isRecording && await startRecording(type, originalTab)
-    !isRecording && stopRecording
+    await (isRecording ? startRecording(type, originalTab) : stopRecording())
 }
 
 async function getTabAudioStream(originalTab) {
     const streamId = await new Promise((resolve, reject) => {
         chrome.tabCapture.getMediaStreamId({ targetTabId: originalTab.id }, streamId => {
-            if (chrome.runtime.lastError) {
-                reject(chrome.runtime.lastError);
-            } else {
-                resolve(streamId);
-            }
-        });
-    });
+            const error = chrome.runtime?.lastError
+            error ? reject(error) : resolve(streamId)
+        })
+    })
 
     return await navigator.mediaDevices.getUserMedia({
-        audio: {
-            mandatory: {
-                chromeMediaSource: 'tab',
-                chromeMediaSourceId: streamId,
-            },
-        },
         video: false,
-    });
+        audio: { mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: streamId } },
+    })
 }
 
 function initMediaRecorder() {
-    mediaRecorder = new MediaRecorder(audioStream);
-    audioChunks = [];
+    mediaRecorder = new MediaRecorder(audioStream)
+    audioChunks = []
 
     mediaRecorder.ondataavailable = event => {
-        audioChunks.push(event.data);
-        updateRecordingProgress(audioChunks.length);
-    };
+        audioChunks.push(event.data)
+        updateRecordingProgress(audioChunks.length)
+    }
 
     mediaRecorder.onstop = () => {
-        audioStream.getTracks().forEach(track => track.stop());
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        showRecordingResult(audioBlob, 'webm');
-    };
+        audioStream.getTracks().forEach(track => track.stop())
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' })
+        const audioUrl = URL.createObjectURL(audioBlob)
+        showRecordingResult(audioUrl, 'webm')
+    }
 
-    mediaRecorder.start(1000);
-    showRecordingProgress();
+    mediaRecorder.start(1000)
+    showRecordingProgress()
 }
 
-export const startRecording = async (type, originalTab) => {
+export async function startRecording(type, originalTab) {
     try {
         audioStream = await (type == 'tab'
-        ? getTabAudioStream(originalTab)
-        : navigator.mediaDevices.getUserMedia({ audio: true }))
+            ? getTabAudioStream(originalTab)
+            : navigator.mediaDevices.getUserMedia({ audio: true }))
+
+        const audioContext = new AudioContext()
+        const source = audioContext.createMediaStreamSource(audioStream)
+        source.connect(audioContext.destination)
 
         initMediaRecorder()
         isRecording = true
@@ -80,13 +78,16 @@ export const startRecording = async (type, originalTab) => {
     }
 }
 
-export const stopRecording = () => {
+export async function stopRecording() {
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop()
-        mediaRecorder.onstop = async () => {
-            audioStream.getTracks().forEach(track => track.stop())
-            recordedBlob = new Blob(audioChunks, { type: 'audio/webm' })
-            await updateDownloadLink(recordedBlob)
-        }
+        return new Promise(resolve => {
+            mediaRecorder.onstop = async () => {
+                audioStream.getTracks().forEach(track => track.stop())
+                recordedBlob = new Blob(audioChunks, { type: 'audio/webm' })
+                await updateDownloadLink(recordedBlob)
+                resolve()
+            }
+            mediaRecorder.stop()
+        })
     }
 }

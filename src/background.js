@@ -49,7 +49,7 @@ chrome.action.onClicked.addListener(tab => {
         originalTabId = tab.id
         chrome.windows.create(
             {
-                url: `src/index.html?tabId=${tab.id}`,
+                url: `main.html?tabId=${tab.id}`,
                 type: 'popup',
                 width: 350,
                 height: 375,
