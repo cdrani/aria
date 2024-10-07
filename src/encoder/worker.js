@@ -29,3 +29,4 @@ function encodeAsMP3(sampleRate, channelData) {
 
     self.postMessage({ action: 'mp3Converted', data: mp3Data })
 }
+

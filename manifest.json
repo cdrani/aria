@@ -20,6 +20,7 @@
         }
     },
     "background": {
+        "type": "module",
         "service_worker": "src/background.js"
     },
     "host_permissions": ["<all_urls>"],
