@@ -20,16 +20,21 @@ function messageHandler(e) {
     }
 }
 
+// send audio data to worker for MP3 convertion
 export function convertToMp3(blob) {
-    // This function sends the audio data to the worker for MP3 conversion
     const audioContext = new AudioContext()
-
     blob.arrayBuffer().then(arrayBuffer => {
         audioContext.decodeAudioData(arrayBuffer).then(audioBuffer => {
-            encoderWorker.postMessage({
-                action: 'convertToMp3',
-                sampleRate: audioBuffer.sampleRate,
-                channelData: audioBuffer.getChannelData(0),
+            // Retrieve quality from Chrome storage
+            chrome.storage.sync.get(['quality'], result => {
+                const quality = result.quality || 128 // Default to 128 if not set
+
+                encoderWorker.postMessage({
+                    action: 'convertToMp3',
+                    sampleRate: audioBuffer.sampleRate,
+                    channelData: audioBuffer.getChannelData(0),
+                    bitrate: quality,
+                })
             })
         })
     })

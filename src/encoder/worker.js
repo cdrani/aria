@@ -3,12 +3,12 @@ self.onmessage = e => {
         importScripts(e.data.lameUrl)
         lamejs = self.lamejs // Store the lamejs object globally in the worker
     } else if (e.data.action === 'convertToMp3') {
-        encodeAsMP3(e.data.sampleRate, e.data.channelData)
+        encodeAsMP3(e.data.sampleRate, e.data.channelData, e.data.bitrate)
     }
 }
 
-function encodeAsMP3(sampleRate, channelData) {
-    const mp3Encoder = new lamejs.Mp3Encoder(1, sampleRate, 128)
+function encodeAsMP3(sampleRate, channelData, bitrate) {
+    const mp3Encoder = new lamejs.Mp3Encoder(1, sampleRate, bitrate)
     const mp3Data = []
 
     const sampleBlockSize = 1152
@@ -29,4 +29,3 @@ function encodeAsMP3(sampleRate, channelData) {
 
     self.postMessage({ action: 'mp3Converted', data: mp3Data })
 }
-

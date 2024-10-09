@@ -1,7 +1,7 @@
 let audioStream = null
 let mediaRecorder = null
 let audioChunks = []
-let settings = { includeSystemAudio: false, format: 'webm' }
+let settings = { includeSystemAudio: false, format: 'webm', quality: 128, microphoneId: null }
 
 chrome.runtime.onInstalled.addListener(() => chrome.storage.local.set({ settings }))
 
@@ -20,7 +20,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
             break
         case 'UPDATE_SETTINGS':
             settings = { ...settings, ...request.data }
-            chrome.storage.local.set({ settings: settings })
+            chrome.storage.local.set({ settings })
             sendResponse({ success: true })
             break
         case 'START_RECORDING':
@@ -28,6 +28,21 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
             return true
         case 'STOP_RECORDING':
             stopRecording(sendResponse)
+            return true
+        case 'TOGGLE_TAB_MUTE':
+            chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+                if (tabs[0]) {
+                    chrome.tabs.update(tabs[0].id, { muted: request.mute }, updatedTab => {
+                        if (chrome.runtime.lastError) {
+                            sendResponse({ error: chrome.runtime.lastError.message })
+                        } else {
+                            sendResponse({ success: true })
+                        }
+                    })
+                } else {
+                    sendResponse({ error: 'No active tab found' })
+                }
+            })
             return true
     }
 })
@@ -128,39 +143,44 @@ function stopRecording(sendResponse) {
 }
 
 function processAudio(audioBlob, format, sendResponse) {
-    if (format === 'webm') {
-        const audioUrl = URL.createObjectURL(audioBlob)
-        sendResponse({ success: true, audioUrl, format: 'webm' })
-        saveAudio(audioUrl, 'webm')
-        return
-    }
+    chrome.storage.sync.get(['quality'], result => {
+        const quality = result.quality || 128 // Default to 128 if not set
 
-    const fileReader = new FileReader()
-    fileReader.onload = event => {
-        const arrayBuffer = event.target.result
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)()
-        audioContext.decodeAudioData(arrayBuffer, audioBuffer => {
-            const worker = new Worker('popup/worker.js')
-            worker.onmessage = e => {
-                if (e.data.action === 'progress') {
-                    sendMessageToPopup({
-                        action: 'ENCODING_PROGRESS',
-                        data: { progress: e.data.progress },
-                    })
-                } else if (e.data.action === 'complete') {
-                    const audioUrl = URL.createObjectURL(e.data.blob)
-                    sendResponse({ success: true, audioUrl, format: e.data.format })
-                    saveAudio(audioUrl, e.data.format)
+        if (format === 'webm') {
+            const audioUrl = URL.createObjectURL(audioBlob)
+            sendResponse({ success: true, audioUrl, format: 'webm' })
+            saveAudio(audioUrl, 'webm')
+            return
+        }
+
+        const fileReader = new FileReader()
+        fileReader.onload = event => {
+            const arrayBuffer = event.target.result
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+            audioContext.decodeAudioData(arrayBuffer, audioBuffer => {
+                const worker = new Worker('popup/worker.js')
+                worker.onmessage = e => {
+                    if (e.data.action === 'progress') {
+                        sendMessageToPopup({
+                            action: 'ENCODING_PROGRESS',
+                            data: { progress: e.data.progress },
+                        })
+                    } else if (e.data.action === 'complete') {
+                        const audioUrl = URL.createObjectURL(e.data.blob)
+                        sendResponse({ success: true, audioUrl, format: e.data.format })
+                        saveAudio(audioUrl, e.data.format)
+                    }
                 }
-            }
-            worker.postMessage({
-                action: format === 'mp3' ? 'encodeMP3' : 'encodeWAV',
-                audioBuffer,
-                sampleRate: audioBuffer.sampleRate,
+                worker.postMessage({
+                    quality,
+                    audioBuffer,
+                    sampleRate: audioBuffer.sampleRate,
+                    action: format === 'mp3' ? 'encodeMP3' : 'encodeWAV',
+                })
             })
-        })
-    }
-    fileReader.readAsArrayBuffer(audioBlob)
+        }
+        fileReader.readAsArrayBuffer(audioBlob)
+    })
 }
 
 function saveAudio(audioUrl, format) {

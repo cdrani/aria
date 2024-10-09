@@ -39,8 +39,9 @@ async function getTabAudioStream(originalTab) {
     })
 }
 
-function initMediaRecorder() {
-    mediaRecorder = new MediaRecorder(audioStream)
+function initMediaRecorder(quality) {
+    const options = { mimeType: 'audio/webm', audioBitsPerSecond: quality * 1000 }
+    mediaRecorder = new MediaRecorder(audioStream, options)
     audioChunks = []
 
     mediaRecorder.ondataavailable = event => {
@@ -69,7 +70,7 @@ export async function startRecording(type, originalTab) {
         const source = audioContext.createMediaStreamSource(audioStream)
         source.connect(audioContext.destination)
 
-        initMediaRecorder()
+        initMediaRecorder(settings?.quality || 128)
         isRecording = true
     } catch (error) {
         console.error('Error starting recording:', error)
