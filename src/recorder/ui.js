@@ -1,5 +1,23 @@
 import { convertToMp3 } from '../encoder'
-import { stopRecording } from './controls'
+import { stopRecording, toggleRecording } from './controls'
+
+let wavesurfer
+
+export function initWavesurfer(WaveSurfer) {
+    wavesurfer = WaveSurfer.create({
+        container: '#waveform',
+        waveColor: 'violet',
+        progressColor: 'purple',
+        cursorColor: 'navy',
+        height: 100,
+        responsive: true,
+    })
+}
+
+export function updateWavesurfer(audioBlob) {
+    const audioUrl = URL.createObjectURL(audioBlob)
+    wavesurfer.load(audioUrl)
+}
 
 export function resetRecordButton(type) {
     const button = document.getElementById(`recorder__${type}__button`)
@@ -29,15 +47,12 @@ export async function updateDownloadLink(recordedBlob) {
     }
 
     updateDownloadLinkUI(finalBlob, mimeType)
+    updateWavesurfer(finalBlob)
 }
 
 export function showRecordingResult(audioUrl, format) {
     const result = document.createElement('div')
     result.className = 'result'
-
-    const audio = document.createElement('audio')
-    audio.controls = true
-    audio.src = audioUrl
 
     const downloadLink = document.createElement('a')
     downloadLink.href = audioUrl
@@ -45,12 +60,42 @@ export function showRecordingResult(audioUrl, format) {
     downloadLink.className = 'extension-button success'
     downloadLink.textContent = 'Download'
 
-    result.appendChild(audio)
+    const playButton = document.createElement('button')
+    playButton.textContent = 'Play'
+    playButton.className = 'extension-button primary'
+    playButton.onclick = () => {
+        if (wavesurfer.isPlaying()) {
+            wavesurfer.pause()
+            playButton.textContent = 'Play'
+        } else {
+            wavesurfer.play()
+            playButton.textContent = 'Pause'
+        }
+    }
+
+    const stopButton = document.createElement('button')
+    stopButton.textContent = 'Stop'
+    stopButton.className = 'extension-button danger'
+    stopButton.onclick = () => {
+        wavesurfer.stop()
+        playButton.textContent = 'Play'
+    }
+
     result.appendChild(downloadLink)
+    result.appendChild(playButton)
+    result.appendChild(stopButton)
 
     const recorder = document.querySelector('.recorder')
     recorder.innerHTML = ''
     recorder.appendChild(result)
+
+    // Update Wavesurfer
+    wavesurfer.load(audioUrl)
+
+    // Update play button text when playback ends
+    wavesurfer.on('finish', () => {
+        playButton.textContent = 'Play'
+    })
 }
 
 export function showRecordingProgress() {
@@ -67,7 +112,7 @@ export function showRecordingProgress() {
     const discardButton = document.createElement('button')
     discardButton.textContent = 'Discard Recording'
     discardButton.className = 'extension-button warning'
-    discardButton.onclick = () => toggleRecording(recordingType, null, true)
+    discardButton.onclick = () => toggleRecording(null, null, true)
 
     recorder.appendChild(progressDiv)
     recorder.appendChild(stopButton)

@@ -1,4 +1,5 @@
 import {
+    updateWavesurfer,
     updateDownloadLink,
     resetRecordButton,
     showRecordingResult,
@@ -19,17 +20,14 @@ export async function toggleRecording(type, originalTab, discard = false) {
     if (discard) return discardRecording()
 
     if (!isRecording) {
-        // Start recording
         isRecording = true
         isPaused = false
         recordingType = type
         await startRecording(type, originalTab)
     } else if (isPaused) {
-        // Resume recording
         isPaused = false
         mediaRecorder.resume()
     } else {
-        // Pause recording
         isPaused = true
         mediaRecorder.pause()
     }
@@ -59,6 +57,10 @@ function initMediaRecorder(quality) {
     mediaRecorder.ondataavailable = event => {
         audioChunks.push(event.data)
         updateRecordingProgress(audioChunks.length)
+
+        // Update Wavesurfer with the current recording
+        const currentBlob = new Blob(audioChunks, { type: 'audio/webm' })
+        updateWavesurfer(currentBlob)
     }
 
     mediaRecorder.onstop = () => {
@@ -133,7 +135,8 @@ export function discardRecording() {
     resetRecordButton(recordingType)
     updateRecordingButtonState(isRecording, isPaused, recordingType)
 
-    // Clear the recorder UI
+    // Clear the recorder UI and reset Wavesurfer
     const recorder = document.querySelector('.recorder')
     recorder.innerHTML = ''
+    updateWavesurfer(new Blob([], { type: 'audio/webm' }))
 }

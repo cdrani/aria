@@ -1,6 +1,8 @@
 import './style.css'
+import './lib/wavesurfer.min.js'
 import { setupUI } from './ui/index.js'
 import { updateTabInfo } from './ui/tab.js'
+import { initWavesurfer } from './recorder/ui.js'
 import { initEncoderWorker } from './encoder/index.js'
 import { toggleRecording } from './recorder/controls.js'
 
@@ -9,6 +11,7 @@ let originalTab = null
 document.addEventListener('DOMContentLoaded', async () => {
     setupUI()
     initEncoderWorker()
+    initWavesurfer(WaveSurfer)
 
     chrome.runtime.sendMessage({ action: 'GET_ORIGINAL_TAB' }, tab => {
         originalTab = tab
