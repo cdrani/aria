@@ -1,4 +1,5 @@
 import {
+    hideWaveform,
     updateWavesurfer,
     updateDownloadLink,
     resetRecordButton,
@@ -35,7 +36,7 @@ export async function toggleRecording(type, originalTab, discard = false) {
     updateRecordingButtonState(isRecording, isPaused, type)
 }
 
-async function getTabAudioStream(originalTab) {
+async function getTabAudioStream(originalTab, muted) {
     const streamId = await new Promise((resolve, reject) => {
         chrome.tabCapture.getMediaStreamId({ targetTabId: originalTab.id }, streamId => {
             const error = chrome.runtime?.lastError
@@ -43,10 +44,14 @@ async function getTabAudioStream(originalTab) {
         })
     })
 
-    return await navigator.mediaDevices.getUserMedia({
+    const stream = await navigator.mediaDevices.getUserMedia({
         video: false,
         audio: { mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: streamId } },
     })
+
+    stream.getAudioTracks().forEach(track => (track.enabled = !muted))
+
+    return stream
 }
 
 function initMediaRecorder(quality) {
@@ -78,7 +83,7 @@ function initMediaRecorder(quality) {
         console.log('Recording resumed')
     }
 
-    mediaRecorder.start(1000)
+    mediaRecorder.start(0)
     showRecordingProgress()
 }
 
@@ -88,9 +93,13 @@ export async function startRecording(type, originalTab) {
             chrome.runtime.sendMessage({ action: 'GET_SETTINGS' }, resolve)
         )
         audioStream = await (type == 'tab'
-            ? getTabAudioStream(originalTab)
+            ? getTabAudioStream(originalTab, settings.muted)
             : navigator.mediaDevices.getUserMedia({
-                  audio: { deviceId: settings.microphoneId ? { exact: settings.microphoneId } : undefined },
+                  audio: {
+                      deviceId: settings.microphoneId
+                          ? { exact: settings.microphoneId }
+                          : undefined,
+                  },
               }))
 
         const audioContext = new AudioContext()
@@ -139,4 +148,5 @@ export function discardRecording() {
     const recorder = document.querySelector('.recorder')
     recorder.innerHTML = ''
     updateWavesurfer(new Blob([], { type: 'audio/webm' }))
+    hideWaveform()
 }

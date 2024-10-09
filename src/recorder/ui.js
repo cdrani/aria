@@ -12,11 +12,13 @@ export function initWavesurfer(WaveSurfer) {
         height: 100,
         responsive: true,
     })
+    hideWaveform()
 }
 
 export function updateWavesurfer(audioBlob) {
     const audioUrl = URL.createObjectURL(audioBlob)
     wavesurfer.load(audioUrl)
+    showWaveform()
 }
 
 export function resetRecordButton(type) {
@@ -96,6 +98,8 @@ export function showRecordingResult(audioUrl, format) {
     wavesurfer.on('finish', () => {
         playButton.textContent = 'Play'
     })
+
+    showWaveform()
 }
 
 export function showRecordingProgress() {
@@ -117,6 +121,8 @@ export function showRecordingProgress() {
     recorder.appendChild(progressDiv)
     recorder.appendChild(stopButton)
     recorder.appendChild(discardButton)
+
+    showWaveform()
 }
 
 export function updateRecordingProgress(chunksCount) {
@@ -143,4 +149,14 @@ export function updateRecordingButtonState(isRecording, isPaused, type) {
     button.textContent = 'Pause'
     button.classList.remove('primary', 'warning')
     button.classList.add('danger')
+}
+
+export function hideWaveform() {
+    const waveformContainer = document.getElementById('progress')
+    waveformContainer.style.display = 'none'
+}
+
+export function showWaveform() {
+    const waveformContainer = document.getElementById('progress')
+    waveformContainer.style.display = 'block'
 }
