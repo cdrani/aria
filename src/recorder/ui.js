@@ -1,10 +1,11 @@
 import { convertToMp3 } from '../encoder'
+import { stopRecording } from './controls'
 
 export function resetRecordButton(type) {
-    const button = document.getElementById(`recorder__${type}__button`);
-    button.textContent = 'Record';
-    button.classList.remove('danger');
-    button.classList.add('primary');
+    const button = document.getElementById(`recorder__${type}__button`)
+    button.textContent = 'Record'
+    button.classList.remove('danger')
+    button.classList.add('primary')
 }
 
 export function updateDownloadLinkUI(blob, mimeType) {
@@ -16,11 +17,9 @@ export async function updateDownloadLink(recordedBlob) {
     let finalBlob = recordedBlob
     let mimeType = 'audio/webm'
 
-    // Handle format conversion if needed (mp3, wav, etc.)
     switch (document.getElementById('formatSelect').value) {
         case 'mp3':
-            return await convertToMp3(finalBlob)
-            // Mp3 conversion is handled async via worker
+            return convertToMp3(finalBlob)
         case 'wav':
             finalBlob = await convertToWav(recordedBlob)
             mimeType = 'audio/wav'
@@ -59,7 +58,20 @@ export function showRecordingProgress() {
     const progressDiv = document.createElement('div')
     progressDiv.id = 'recordingProgress'
     progressDiv.textContent = 'Recording in progress...'
+
+    const stopButton = document.createElement('button')
+    stopButton.textContent = 'Stop Recording'
+    stopButton.className = 'extension-button danger'
+    stopButton.onclick = stopRecording
+
+    const discardButton = document.createElement('button')
+    discardButton.textContent = 'Discard Recording'
+    discardButton.className = 'extension-button warning'
+    discardButton.onclick = () => toggleRecording(recordingType, null, true)
+
     recorder.appendChild(progressDiv)
+    recorder.appendChild(stopButton)
+    recorder.appendChild(discardButton)
 }
 
 export function updateRecordingProgress(chunksCount) {
@@ -67,4 +79,23 @@ export function updateRecordingProgress(chunksCount) {
     if (progressDiv) {
         progressDiv.textContent = `Recording in progress: ${chunksCount} chunks`
     }
+}
+
+export function updateRecordingButtonState(isRecording, isPaused, type) {
+    const button = document.getElementById(`recorder__${type}__button`)
+    if (!isRecording) {
+        button.textContent = 'Record'
+        button.classList.remove('danger', 'warning')
+        button.classList.add('primary')
+        return
+    }
+    if (isPaused) {
+        button.textContent = 'Resume'
+        button.classList.remove('danger', 'primary')
+        button.classList.add('warning')
+        return
+    }
+    button.textContent = 'Pause'
+    button.classList.remove('primary', 'warning')
+    button.classList.add('danger')
 }
