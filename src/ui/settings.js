@@ -1,3 +1,5 @@
+import { toggleMute } from '../recorder/controls.js'
+
 export function createSettings() {
     const settings = document.createElement('div')
     settings.className = 'settings'
@@ -46,12 +48,9 @@ function createMuteToggle() {
 
 function setupMuteToggle(muteToggle) {
     muteToggle.addEventListener('change', event => {
-        updateSettings({ muted: event.target.checked })
-    })
-
-    // Add an event listener for mute errors
-    document.addEventListener('tabMuteError', () => {
-        muteToggle.checked = !muteToggle.checked
+        const isMuted = event.target.checked
+        toggleMute(isMuted)
+        updateSettings({ muted: isMuted })
     })
 }
 

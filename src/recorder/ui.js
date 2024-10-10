@@ -91,6 +91,7 @@ export function showRecordingResult(audioUrl, format) {
     recorder.innerHTML = ''
     recorder.appendChild(result)
 
+    console.log('loading wavesurfer url: ', audioUrl)
     // Update Wavesurfer
     wavesurfer.load(audioUrl)
 
@@ -99,6 +100,7 @@ export function showRecordingResult(audioUrl, format) {
         playButton.textContent = 'Play'
     })
 
+    console.log('show waveform')
     showWaveform()
 }
 
