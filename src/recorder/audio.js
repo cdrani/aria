@@ -1,8 +1,8 @@
 import {
+    updateWavesurfer,
     showRecordingResult,
     showRecordingProgress,
     updateRecordingProgress,
-    updateWavesurfer,
 } from './ui'
 
 export default class AudioRecorder {
@@ -101,6 +101,7 @@ export default class AudioRecorder {
         this.mediaRecorder.stop()
         this.isRecording = false
         this.isPaused = false
+        this.releaseStream()
     }
 
     pauseRecording() {
@@ -131,48 +132,30 @@ export default class AudioRecorder {
         this.isMuted = false
     }
 
-    muteTab() {
-        if (this.tabId !== null) {
-            chrome.tabs.update(this.tabId, { muted: true })
-        }
-    }
-
-    unmuteTab() {
-        if (this.tabId !== null) {
-            chrome.tabs.update(this.tabId, { muted: false }, () => {
-                console.log(`Tab ${this.tabId} unmuted`)
-            })
-        }
-    }
-
     discardRecording() {
         if (this.isRecording) this.stopRecording()
 
         this.chunks = []
-        if (this.stream) this.stream.getTracks().forEach(track => track.stop())
+        this.releaseStream()
 
-        this.stream = null
         this.mediaRecorder = null
         this.isRecording = false
         this.isPaused = false
     }
 
-    onRecordingComplete(blob) {
-        // This method should be overridden by the user of this class
-        console.log('Recording complete. Override this method to handle the blob.')
+    // TODO:  maybe load download link here?
+    onRecordingComplete(_blob) {
+        this.releaseStream()
     }
 
-    // Create an audio player to play the captured stream
     async createAudioPlayer() {
         if (!this.stream) return
 
         this.audioPlayer = new Audio()
         this.audioPlayer.srcObject = this.stream
         await this.audioPlayer.play()
-        this.audioPlayer.volume = 0 // Mute the playback
     }
 
-    // Close the audio player
     closeAudioPlayer() {
         if (!this.audioPlayer) return
 
@@ -181,11 +164,29 @@ export default class AudioRecorder {
         this.audioPlayer = null
     }
 
-    // Handle muting/unmuting the audio output
     toggleMute(mute) {
         if (!this.stream) return
 
         mute ? this.closeAudioPlayer() : this.createAudioPlayer()
         this.isMuted = mute
+    }
+
+    releaseStream() {
+        if (this.stream) {
+            this.stream.getTracks().forEach(track => track.stop())
+            this.stream = null
+        }
+        if (this.tabId) {
+            chrome.tabCapture.getCapturedTabs(tabs => {
+                if (tabs.some(tab => tab.tabId === this.tabId)) {
+                    chrome.tabCapture.stopCapture(this.tabId, () => {
+                        if (chrome.runtime.lastError) {
+                            console.error('Error stopping tab capture:', chrome.runtime.lastError)
+                        }
+                    })
+                }
+            })
+        }
+        this.tabId = null
     }
 }
