@@ -20,7 +20,10 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 
     switch (request.action) {
         case 'GET_SETTINGS':
-            sendResponse(settings)
+            chrome.storage.sync.get('settings').then(result => {
+                const settings = result?.settings || {}
+                sendResponse(settings)
+            })
             break
         case 'UPDATE_SETTINGS':
             settings = { ...settings, ...request.data }

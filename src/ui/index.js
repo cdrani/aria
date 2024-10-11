@@ -2,17 +2,17 @@ import { createTabInfo } from './tab'
 import { createSettings } from './settings'
 import { createRecorder } from './recorder'
 
-export function setupUI() {
+export async function setupUI() {
     const root = document.getElementById('root')
-    const extension = createExtension()
+    const extension = await createExtension()
     root.appendChild(extension)
-    initExtension()
+    await initExtension()
 }
 
-function createExtension() {
+async function createExtension() {
     const extension = document.createElement('div')
     extension.className = 'extension'
-    extension.appendChild(createContent())
+    extension.appendChild(await createContent())
     return extension
 }
 
@@ -26,28 +26,22 @@ function createProgress() {
     return progress
 }
 
-function createContent() {
+async function createContent() {
     const content = document.createElement('div')
     content.className = 'content'
+    const settings = await new Promise(resolve =>
+        chrome.runtime.sendMessage({ action: 'GET_SETTINGS' }, resolve)
+    )
     content.appendChild(createTabInfo())
-    content.appendChild(createSettings())
+    content.appendChild(createSettings(settings))
     content.appendChild(createProgress())
     content.appendChild(createRecorder())
     return content
 }
 
-function initExtension() {
+async function initExtension() {
     chrome.runtime.sendMessage({ action: 'GET_ORIGINAL_TAB' }, tab => {
         document.getElementById('url-content').textContent = tab.url
         document.getElementById('title-content').value = tab.title
-    })
-
-    const formatSelect = document.getElementById('formatSelect')
-    formatSelect.addEventListener('change', event => {
-        const selectedFormat = event.target.value
-        chrome.runtime.sendMessage({
-            action: 'UPDATE_SETTINGS',
-            data: { format: selectedFormat },
-        })
     })
 }

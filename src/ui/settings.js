@@ -1,13 +1,13 @@
 import { toggleMute } from '../recorder/controls.js'
 
-export function createSettings() {
+export function createSettings(state) {
     const settings = document.createElement('div')
     settings.className = 'settings'
 
-    const muteToggle = createMuteToggle()
-    const formatSelect = createFormatSelect()
-    const qualitySelect = createQualitySelect()
-    const microphoneSelect = createMicrophoneSelect()
+    const muteToggle = createMuteToggle(state.muted)
+    const formatSelect = createFormatSelect(state.format)
+    const qualitySelect = createQualitySelect(state.quality)
+    const microphoneSelect = createMicrophoneSelect(state.microphoneId)
 
     settings.appendChild(muteToggle)
     settings.appendChild(formatSelect)
@@ -17,7 +17,7 @@ export function createSettings() {
     return settings
 }
 
-function createMuteToggle() {
+function createMuteToggle(isMuted) {
     const toggleContainer = document.createElement('div')
     toggleContainer.className = 'toggle-container'
 
@@ -27,6 +27,7 @@ function createMuteToggle() {
     const input = document.createElement('input')
     input.type = 'checkbox'
     input.id = 'muteToggle'
+    input.checked = isMuted
     label.htmlFor = 'muteToggle'
 
     const slider = document.createElement('span')
@@ -54,7 +55,7 @@ function setupMuteToggle(muteToggle) {
     })
 }
 
-function createFormatSelect() {
+function createFormatSelect(format) {
     const formatSelect = document.createElement('select')
     formatSelect.id = 'formatSelect'
     ;['webm', 'mp3', 'wav'].forEach(format => {
@@ -64,10 +65,16 @@ function createFormatSelect() {
         formatSelect.appendChild(option)
     })
 
+    formatSelect.addEventListener('change', event => {
+        updateSettings({ format: event.target.value })
+    })
+
+    formatSelect.value = format
+
     return formatSelect
 }
 
-function createQualitySelect() {
+function createQualitySelect(quality) {
     const qualitySelect = document.createElement('select')
     qualitySelect.id = 'qualitySelect'
 
@@ -83,10 +90,12 @@ function createQualitySelect() {
         updateSettings({ quality: parseInt(event.target.value, 10) })
     })
 
+    qualitySelect.value = quality
+
     return qualitySelect
 }
 
-function createMicrophoneSelect() {
+function createMicrophoneSelect(microphoneId) {
     const microphoneSelect = document.createElement('select')
     microphoneSelect.id = 'microphoneSelect'
 
@@ -104,6 +113,8 @@ function createMicrophoneSelect() {
             })
         })
         .catch(err => console.error('Error enumerating devices', err))
+
+    microphoneSelect.value = microphoneId
 
     microphoneSelect.addEventListener('change', event => {
         updateSettings({ microphoneId: event.target.value })
