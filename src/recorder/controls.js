@@ -3,9 +3,9 @@ import {
     updateWavesurfer,
     updateDownloadLink,
     resetRecordButton,
-    updateRecordingButtonState,
     setOriginalRecordedBlob,
     resetOriginalRecordedBlob,
+    updateRecordingButtonState,
 } from './ui'
 import AudioRecorder from './audio'
 import { cleanupResources } from '../encoder'
@@ -21,11 +21,11 @@ export async function toggleRecording(type, originalTab, discard = false) {
 
     if (discard) {
         resetOriginalRecordedBlob()
-        return discardRecording()
+        return discardRecording(audioRecorder, type)
     }
 
     if (!audioRecorder.isRecording) {
-        resetOriginalRecordedBlob() // Reset before starting a new recording
+        resetOriginalRecordedBlob()
         await startRecording(type, originalTab)
     } else if (audioRecorder.isPaused) {
         audioRecorder.resumeRecording()
@@ -61,25 +61,24 @@ export function stopRecording() {
     audioRecorder.closeAudioPlayer()
 }
 
-export function discardRecording() {
+export function discardRecording(audioRecorder, type) {
     audioRecorder?.discardRecording()
     audioRecorder?.closeAudioPlayer()
 
-    resetRecordButton(recordingType)
-    updateRecordingButtonState(false, false, recordingType)
+    resetRecordButton(type)
 
-    const recorder = document.querySelector('.recorder')
-    recorder.innerHTML = ''
-    const audioUrl = URL.createObjectURL(new Blob([], { type: 'audio/webm' }))
-    updateWavesurfer(audioUrl)
+    const progressUI = document.getElementById('progress-ui')
+    if (progressUI) progressUI.remove()
+
     hideWaveform()
-
     resetOriginalRecordedBlob()
     cleanupResources()
 }
 
 async function handleRecordingComplete(blob) {
     setOriginalRecordedBlob(blob)
+    if (audioRecorder.discarding) return
+
     await updateDownloadLink(blob)
     const audioUrl = URL.createObjectURL(blob)
     updateWavesurfer(audioUrl)

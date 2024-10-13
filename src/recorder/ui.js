@@ -19,11 +19,11 @@ export function initWavesurfer(WaveSurfer) {
 
 export function updateWavesurfer(audioUrl) {
     wavesurfer.load(audioUrl)
-    showWaveform()
 }
 
 export function resetRecordButton(type) {
     const button = document.getElementById(`recorder__${type}__button`)
+    if (!button) return
     button.textContent = 'Record'
     button.classList.remove('danger')
     button.classList.add('primary')
@@ -116,11 +116,13 @@ export function showRecordingResult(audioUrl, format) {
 
     wavesurfer.load(audioUrl)
     wavesurfer.on('finish', () => (playButton.textContent = 'Play'))
-    showWaveform()
 }
 
 export function showRecordingProgress() {
-    const recorder = document.querySelector('.recorder')
+    const progressContainer = document.getElementById('progress')
+    const progressUI = document.createElement('div')
+    progressUI.id = 'progress-ui'
+
     const progressDiv = document.createElement('div')
     progressDiv.id = 'recordingProgress'
     progressDiv.textContent = 'Recording in progress...'
@@ -130,20 +132,22 @@ export function showRecordingProgress() {
     progressGroup.className = 'progress-group'
 
     const stopButton = document.createElement('button')
-    stopButton.textContent = 'Stop Recording'
+    stopButton.textContent = 'Stop'
     stopButton.className = 'extension-button danger'
     stopButton.onclick = stopRecording
 
     const discardButton = document.createElement('button')
-    discardButton.textContent = 'Discard Recording'
+    discardButton.textContent = 'Discard'
     discardButton.className = 'extension-button warning'
     discardButton.onclick = () => toggleRecording(null, null, true)
 
     progressGroup.appendChild(stopButton)
     progressGroup.appendChild(discardButton)
 
-    recorder.appendChild(progressDiv)
-    recorder.appendChild(progressGroup)
+    progressUI.appendChild(progressDiv)
+    progressUI.appendChild(progressGroup)
+
+    progressContainer.appendChild(progressUI)
 
     showWaveform()
 }
@@ -175,13 +179,13 @@ export function updateRecordingButtonState(isRecording, isPaused, type) {
 }
 
 export function hideWaveform() {
-    const waveformContainer = document.getElementById('progress')
-    waveformContainer.style.display = 'none'
+    const waveformContainer = document.getElementById('waveform')
+    if (waveformContainer) waveformContainer.style.display = 'none'
 }
 
 export function showWaveform() {
-    const waveformContainer = document.getElementById('progress')
-    waveformContainer.style.display = 'block'
+    const waveformContainer = document.getElementById('waveform')
+    if (waveformContainer) waveformContainer.style.display = 'block'
 }
 
 export function setOriginalRecordedBlob(blob) {

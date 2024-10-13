@@ -19,7 +19,6 @@ async function createExtension() {
 function createProgress() {
     const progress = document.createElement('div')
     progress.id = 'progress'
-    progress.style.display = 'none'
     const waveSurfer = document.createElement('div')
     waveSurfer.id = 'waveform'
     progress.appendChild(waveSurfer)
