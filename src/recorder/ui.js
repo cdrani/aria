@@ -1,7 +1,9 @@
-import { convertToMp3 } from '../encoder'
+import { convertToWav } from './converters'
+import { convertToMp3, cleanupResources } from '../encoder'
 import { stopRecording, toggleRecording } from './controls'
 
 let wavesurfer
+let originalRecordedBlob = null
 
 export function initWavesurfer(WaveSurfer) {
     wavesurfer = WaveSurfer.create({
@@ -15,8 +17,7 @@ export function initWavesurfer(WaveSurfer) {
     hideWaveform()
 }
 
-export function updateWavesurfer(audioBlob) {
-    const audioUrl = URL.createObjectURL(audioBlob)
+export function updateWavesurfer(audioUrl) {
     wavesurfer.load(audioUrl)
     showWaveform()
 }
@@ -28,39 +29,60 @@ export function resetRecordButton(type) {
     button.classList.add('primary')
 }
 
-export function updateDownloadLinkUI(blob, mimeType) {
+export function updateDownloadLinkUI(blob, format) {
     const audioUrl = URL.createObjectURL(blob)
-    showRecordingResult(audioUrl, mimeType.split('/')[1])
+    setDownloadLink(audioUrl, format)
 }
 
 export async function updateDownloadLink(recordedBlob) {
-    let finalBlob = recordedBlob
-    let mimeType = 'audio/webm'
-
-    switch (document.getElementById('formatSelect').value) {
-        case 'mp3':
-            return convertToMp3(finalBlob)
-        case 'wav':
-            finalBlob = await convertToWav(recordedBlob)
-            mimeType = 'audio/wav'
-            break
-        default:
-            mimeType = 'audio/webm'
+    if (recordedBlob) {
+        originalRecordedBlob = recordedBlob
     }
 
-    updateDownloadLinkUI(finalBlob, mimeType)
-    updateWavesurfer(finalBlob)
+    if (!originalRecordedBlob) return
+
+    const { format, quality } = await new Promise(resolve =>
+        chrome.runtime.sendMessage({ action: 'GET_SETTINGS' }, resolve)
+    )
+
+    let finalBlob = originalRecordedBlob
+
+    switch (format) {
+        case 'mp3':
+            return convertToMp3(originalRecordedBlob, quality)
+        case 'wav':
+            finalBlob = await convertToWav(originalRecordedBlob)
+            break
+    }
+
+    updateDownloadLinkUI(finalBlob, format)
+}
+
+export function setDownloadLink(audioUrl, format) {
+    const title = document.getElementById('title-content').value || 'recorded_audio'
+    const downloadLink = document.getElementById('downloadLink') || document.createElement('a')
+    downloadLink.id = 'downloadLink'
+
+    downloadLink.href = audioUrl
+    downloadLink.download = `${title}.${format}`
+    downloadLink.className = 'extension-button success'
+    downloadLink.textContent = 'Download'
+
+    downloadLink.addEventListener(
+        'click',
+        () => {
+            setTimeout(cleanupResources, 1000)
+        },
+        { once: true }
+    )
+    return downloadLink
 }
 
 export function showRecordingResult(audioUrl, format) {
     const result = document.createElement('div')
     result.className = 'result'
 
-    const downloadLink = document.createElement('a')
-    downloadLink.href = audioUrl
-    downloadLink.download = `recorded_audio.${format}`
-    downloadLink.className = 'extension-button success'
-    downloadLink.textContent = 'Download'
+    const downloadLink = setDownloadLink(audioUrl, format)
 
     const playButton = document.createElement('button')
     playButton.textContent = 'Play'
@@ -91,16 +113,8 @@ export function showRecordingResult(audioUrl, format) {
     recorder.innerHTML = ''
     recorder.appendChild(result)
 
-    console.log('loading wavesurfer url: ', audioUrl)
-    // Update Wavesurfer
     wavesurfer.load(audioUrl)
-
-    // Update play button text when playback ends
-    wavesurfer.on('finish', () => {
-        playButton.textContent = 'Play'
-    })
-
-    console.log('show waveform')
+    wavesurfer.on('finish', () => (playButton.textContent = 'Play'))
     showWaveform()
 }
 
@@ -161,4 +175,16 @@ export function hideWaveform() {
 export function showWaveform() {
     const waveformContainer = document.getElementById('progress')
     waveformContainer.style.display = 'block'
+}
+
+export function setOriginalRecordedBlob(blob) {
+    originalRecordedBlob = blob
+}
+
+export function getOriginalRecordedBlob() {
+    return originalRecordedBlob
+}
+
+export function resetOriginalRecordedBlob() {
+    originalRecordedBlob = null
 }

@@ -1,4 +1,6 @@
-import { toggleMute } from '../recorder/controls.js'
+import { cleanupResources } from '../encoder'
+import { toggleMute } from '../recorder/controls'
+import { updateDownloadLink, getOriginalRecordedBlob } from '../recorder/ui'
 
 export function createSettings(state) {
     const settings = document.createElement('div')
@@ -65,8 +67,12 @@ function createFormatSelect(format) {
         formatSelect.appendChild(option)
     })
 
-    formatSelect.addEventListener('change', event => {
-        updateSettings({ format: event.target.value })
+    formatSelect.addEventListener('change', async event => {
+        const newSettings = { format: event.target.value }
+        updateSettings(newSettings)
+        const originalBlob = getOriginalRecordedBlob()
+        if (event.target.value !== 'mp3') cleanupResources()
+        if (originalBlob) await updateDownloadLink(originalBlob)
     })
 
     formatSelect.value = format
@@ -86,8 +92,11 @@ function createQualitySelect(quality) {
         qualitySelect.appendChild(option)
     })
 
-    qualitySelect.addEventListener('change', event => {
-        updateSettings({ quality: parseInt(event.target.value, 10) })
+    qualitySelect.addEventListener('change', async event => {
+        const newSettings = { quality: parseInt(event.target.value, 10) }
+        updateSettings(newSettings)
+        const originalBlob = getOriginalRecordedBlob()
+        if (originalBlob) await updateDownloadLink(originalBlob)
     })
 
     qualitySelect.value = quality

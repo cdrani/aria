@@ -18,6 +18,13 @@ export default class AudioRecorder {
         this.settings = null
     }
 
+    async getSettings() {
+        const settings = await new Promise(resolve =>
+            chrome.runtime.sendMessage({ action: 'GET_SETTINGS' }, resolve)
+        )
+        this.settings = settings
+    }
+
     async initialize(type, tabId, settings) {
         this.settings = settings
         if (type === 'tab') {
@@ -75,16 +82,26 @@ export default class AudioRecorder {
             updateRecordingProgress(this.chunks.length)
 
             const currentBlob = new Blob(this.chunks, { type: 'audio/webm' })
-            updateWavesurfer(currentBlob)
+            const audioUrl = URL.createObjectURL(currentBlob)
+            updateWavesurfer(audioUrl)
         }
 
-        this.mediaRecorder.onstop = () => {
+        this.mediaRecorder.onstop = async () => {
             const audioBlob = new Blob(this.chunks, { type: 'audio/webm' })
             this.onRecordingComplete(audioBlob)
             this.chunks = []
             const audioUrl = URL.createObjectURL(audioBlob)
             showRecordingResult(audioUrl, 'webm')
         }
+    }
+
+    getMimeType(type) {
+        const types = {
+            mp3: 'audio/mpeg',
+            webm: 'audio/webm',
+            wav: 'audio/wav',
+        }
+        return types[type] || 'audio/webm'
     }
 
     startRecording() {

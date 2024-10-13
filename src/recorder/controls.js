@@ -3,10 +3,12 @@ import {
     updateWavesurfer,
     updateDownloadLink,
     resetRecordButton,
-    showRecordingProgress,
     updateRecordingButtonState,
+    setOriginalRecordedBlob,
+    resetOriginalRecordedBlob,
 } from './ui'
 import AudioRecorder from './audio'
+import { cleanupResources } from '../encoder'
 
 let audioRecorder = null
 let recordingType = 'tab'
@@ -17,9 +19,13 @@ export async function toggleRecording(type, originalTab, discard = false) {
         audioRecorder.onRecordingComplete = handleRecordingComplete
     }
 
-    if (discard) return discardRecording()
+    if (discard) {
+        resetOriginalRecordedBlob()
+        return discardRecording()
+    }
 
     if (!audioRecorder.isRecording) {
+        resetOriginalRecordedBlob() // Reset before starting a new recording
         await startRecording(type, originalTab)
     } else if (audioRecorder.isPaused) {
         audioRecorder.resumeRecording()
@@ -39,11 +45,12 @@ async function startRecording(type, originalTab) {
         audioRecorder.startRecording()
         recordingType = type
 
-        // Initialize audio player for muting
+        // Initialize audio player for playback
         audioRecorder.createAudioPlayer()
     } catch (error) {
         console.error('Error starting recording:', error)
         resetRecordButton(type)
+        resetOriginalRecordedBlob()
     }
 }
 
@@ -63,13 +70,19 @@ export function discardRecording() {
 
     const recorder = document.querySelector('.recorder')
     recorder.innerHTML = ''
-    updateWavesurfer(new Blob([], { type: 'audio/webm' }))
+    const audioUrl = URL.createObjectURL(new Blob([], { type: 'audio/webm' }))
+    updateWavesurfer(audioUrl)
     hideWaveform()
+
+    resetOriginalRecordedBlob()
+    cleanupResources()
 }
 
-function handleRecordingComplete(blob) {
-    updateDownloadLink(blob)
-    updateWavesurfer(blob)
+async function handleRecordingComplete(blob) {
+    setOriginalRecordedBlob(blob)
+    await updateDownloadLink(blob)
+    const audioUrl = URL.createObjectURL(blob)
+    updateWavesurfer(audioUrl)
 }
 
 export function toggleMute(mute) {
