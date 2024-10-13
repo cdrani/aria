@@ -59,21 +59,22 @@ export async function updateDownloadLink(recordedBlob) {
 }
 
 export function setDownloadLink(audioUrl, format) {
-    const title = document.getElementById('title-content').value || 'recorded_audio'
     const downloadLink = document.getElementById('downloadLink') || document.createElement('a')
     downloadLink.id = 'downloadLink'
 
     downloadLink.href = audioUrl
-    downloadLink.download = `${title}.${format}`
     downloadLink.className = 'extension-button success'
     downloadLink.textContent = 'Download'
 
     downloadLink.addEventListener(
         'click',
         () => {
+            const title = document.getElementById('title-content').value || 'recorded_audio'
+            downloadLink.download = `${title}.${format}`
+
             setTimeout(cleanupResources, 1000)
         },
-        { once: true }
+        { once: false }
     )
     return downloadLink
 }
@@ -123,6 +124,10 @@ export function showRecordingProgress() {
     const progressDiv = document.createElement('div')
     progressDiv.id = 'recordingProgress'
     progressDiv.textContent = 'Recording in progress...'
+    progressDiv.style.color = 'white'
+
+    const progressGroup = document.createElement('div')
+    progressGroup.className = 'progress-group'
 
     const stopButton = document.createElement('button')
     stopButton.textContent = 'Stop Recording'
@@ -134,9 +139,11 @@ export function showRecordingProgress() {
     discardButton.className = 'extension-button warning'
     discardButton.onclick = () => toggleRecording(null, null, true)
 
+    progressGroup.appendChild(stopButton)
+    progressGroup.appendChild(discardButton)
+
     recorder.appendChild(progressDiv)
-    recorder.appendChild(stopButton)
-    recorder.appendChild(discardButton)
+    recorder.appendChild(progressGroup)
 
     showWaveform()
 }
