@@ -23,5 +23,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     const micRecordButton = document.getElementById('recorder__microphone__button')
 
     tabRecordButton.addEventListener('click', () => toggleRecording('tab', originalTab))
-    micRecordButton.addEventListener('click', () => toggleRecording('microphone'))
+    micRecordButton.addEventListener('click', () => toggleRecording('microphone', originalTab))
 })

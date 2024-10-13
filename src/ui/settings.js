@@ -110,9 +110,12 @@ function createMicrophoneSelect(microphoneId) {
 
     // Populate microphone options
     navigator.mediaDevices
-        .enumerateDevices()
+        .getUserMedia({ audio: true })
+        .then(() => navigator.mediaDevices.enumerateDevices())
         .then(devices => {
-            const audioInputDevices = devices.filter(device => device.kind === 'audioinput')
+            const audioInputDevices = devices.filter(
+                device => device.kind === 'audioinput' && device.label.length
+            )
             audioInputDevices.forEach(device => {
                 const option = document.createElement('option')
                 option.value = device.deviceId
@@ -120,10 +123,10 @@ function createMicrophoneSelect(microphoneId) {
                     device.label || `Microphone ${microphoneSelect.options.length + 1}`
                 microphoneSelect.appendChild(option)
             })
+
+            microphoneSelect.value = microphoneId ?? audioInputDevices[0].deviceId
         })
         .catch(err => console.error('Error enumerating devices', err))
-
-    microphoneSelect.value = microphoneId
 
     microphoneSelect.addEventListener('change', event => {
         updateSettings({ microphoneId: event.target.value })

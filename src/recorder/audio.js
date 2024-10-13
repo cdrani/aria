@@ -7,6 +7,7 @@ import {
 
 export default class AudioRecorder {
     constructor() {
+        this.type = null
         this.mediaRecorder = null
         this.chunks = []
         this.stream = null
@@ -26,6 +27,7 @@ export default class AudioRecorder {
     }
 
     async initialize(type, tabId, settings) {
+        this.type = type
         this.settings = settings
         if (type === 'tab') {
             await this.captureTabAudio(tabId)
@@ -37,9 +39,7 @@ export default class AudioRecorder {
     async captureMicrophoneAudio() {
         try {
             const constraints = {
-                audio: this.settings.microphoneId
-                    ? { deviceId: { exact: this.settings.microphoneId } }
-                    : true,
+                audio: this.settings.microphoneId ? { deviceId: this.settings.microphoneId } : true,
             }
             this.stream = await navigator.mediaDevices.getUserMedia(constraints)
             this.setupRecorder()
@@ -93,15 +93,6 @@ export default class AudioRecorder {
             const audioUrl = URL.createObjectURL(audioBlob)
             showRecordingResult(audioUrl, 'webm')
         }
-    }
-
-    getMimeType(type) {
-        const types = {
-            mp3: 'audio/mpeg',
-            webm: 'audio/webm',
-            wav: 'audio/wav',
-        }
-        return types[type] || 'audio/webm'
     }
 
     startRecording() {
