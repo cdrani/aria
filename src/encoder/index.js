@@ -66,11 +66,15 @@ export function convertToMp3(blob, quality) {
 
 // Cleanup resources after conversion or in case of errors
 export function cleanupResources() {
-    encoderWorker?.terminate() // Terminate worker when no longer needed
-    encoderWorker = null
-
     audioContext
         ?.close()
         .then(() => (audioContext = null))
         .catch(err => console.error('Error closing AudioContext:', err))
+
+    encoderWorker?.terminate() // Terminate worker when no longer needed
+    encoderWorker = null
+
+    // Revoke any existing object URLs
+    const downloadLink = document.getElementById('downloadLink')
+    if (downloadLink?.href) URL.revokeObjectURL(downloadLink.href)
 }

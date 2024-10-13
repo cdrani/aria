@@ -89,23 +89,27 @@ export default class AudioRecorder {
         this.mediaRecorder.onstop = async () => {
             const audioBlob = new Blob(this.chunks, { type: 'audio/webm' })
             this.onRecordingComplete(audioBlob)
+            if (!this.discarding) {
+                const audioUrl = URL.createObjectURL(audioBlob)
+                showRecordingResult(audioUrl, 'webm')
+            }
             this.chunks = []
-            const audioUrl = URL.createObjectURL(audioBlob)
-            showRecordingResult(audioUrl, 'webm')
+            this.discarding = false
         }
     }
 
     startRecording() {
         if (!(this.mediaRecorder && !this.isRecording)) return
 
-        this.mediaRecorder.start(1000)
+        this.mediaRecorder.start(250)
         this.isRecording = true
         showRecordingProgress()
     }
 
-    stopRecording() {
+    stopRecording(discard = false) {
         if (!(this.mediaRecorder && this.isRecording)) return
 
+        this.discarding = discard
         this.mediaRecorder.stop()
         this.isRecording = false
         this.isPaused = false
@@ -141,7 +145,7 @@ export default class AudioRecorder {
     }
 
     discardRecording() {
-        if (this.isRecording) this.stopRecording()
+        if (this.isRecording) this.stopRecording(true)
 
         this.chunks = []
         this.releaseStream()
