@@ -1,10 +1,10 @@
 import './style.css'
 import './lib/wavesurfer.min.js'
-import { setupUI } from './ui/index.js'
-import { updateTabInfo } from './ui/tab.js'
-import { initWavesurfer } from './recorder/ui.js'
-import { initEncoderWorker } from './encoder/index.js'
-import { toggleRecording } from './recorder/controls.js'
+import { setupUI } from './ui'
+import { updateTabInfo } from './ui/tab'
+import { initEncoderWorker } from './encoder'
+import { initWavesurfer } from './recorder/ui'
+import { toggleRecording } from './recorder/controls'
 
 let originalTab = null
 

@@ -21,22 +21,23 @@ export async function toggleRecording(type, originalTab, discard = false) {
 
     if (discard) {
         resetOriginalRecordedBlob()
-        return discardRecording(audioRecorder, type)
+        return discardRecording({ audioRecorder, type })
     }
 
     if (!audioRecorder.isRecording) {
         resetOriginalRecordedBlob()
-        await startRecording(type, originalTab)
+        await startRecording({ type, originalTab })
     } else if (audioRecorder.isPaused) {
         audioRecorder.resumeRecording()
     } else {
         audioRecorder.pauseRecording()
     }
 
-    updateRecordingButtonState(audioRecorder.isRecording, audioRecorder.isPaused, type)
+    const { isRecording, isPaused } = audioRecorder
+    updateRecordingButtonState({ isRecording, isPaused, type })
 }
 
-async function startRecording(type, originalTab) {
+async function startRecording({ type, originalTab }) {
     try {
         const settings = await new Promise(resolve =>
             chrome.runtime.sendMessage({ action: 'GET_SETTINGS' }, resolve)
@@ -61,11 +62,11 @@ export function stopRecording() {
     audioRecorder.closeAudioPlayer()
 }
 
-export function discardRecording(audioRecorder, type) {
+export function discardRecording({ audioRecorder, type }) {
     audioRecorder?.discardRecording()
     audioRecorder?.closeAudioPlayer()
 
-    resetRecordButton(type)
+    updateRecordingButtonState({ isRecording: false, isPaused: false, type })
 
     const progressUI = document.getElementById('progress-ui')
     if (progressUI) progressUI.remove()

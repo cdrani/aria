@@ -1,6 +1,6 @@
 import { convertToWav } from './converters'
-import { convertToMp3, cleanupResources } from '../encoder'
 import { stopRecording, toggleRecording } from './controls'
+import { convertToMp3, cleanupResources } from '../encoder'
 
 let wavesurfer
 let originalRecordedBlob = null
@@ -159,23 +159,19 @@ export function updateRecordingProgress(chunksCount) {
     }
 }
 
-export function updateRecordingButtonState(isRecording, isPaused, type) {
+export function updateRecordingButtonState({ isRecording, isPaused, type }) {
     const button = document.getElementById(`recorder__${type}__button`)
-    if (!isRecording) {
-        button.textContent = 'Record'
-        button.classList.remove('danger', 'warning')
-        button.classList.add('primary')
-        return
-    }
-    if (isPaused) {
-        button.textContent = 'Resume'
-        button.classList.remove('danger', 'primary')
-        button.classList.add('warning')
-        return
-    }
-    button.textContent = 'Pause'
-    button.classList.remove('primary', 'warning')
-    button.classList.add('danger')
+    if (!button) return
+
+    button.textContent = !isRecording ? 'Record' : isPaused ? 'Resume' : 'Pause'
+    const classesToRemove = !isRecording
+        ? ['danger', 'warning']
+        : isPaused
+        ? ['danger', 'primary']
+        : ['primary', 'warning']
+    button.classList.remove(...classesToRemove)
+    const classToAdd = !isRecording ? 'primary' : isPaused ? 'warning' : 'danger'
+    button.classList.add(classToAdd)
 }
 
 export function hideWaveform() {
