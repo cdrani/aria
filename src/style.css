@@ -390,3 +390,11 @@ input:checked + .slider:before {
     align-items: center;
     gap: 10px;
 }
+
+#qualitySelect,
+#formatSelect {
+    flex: 0;
+    width: 85px;
+    padding: 0 4px;
+    min-width: unset;
+}

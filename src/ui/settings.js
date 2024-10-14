@@ -63,7 +63,7 @@ function createFormatSelect(format) {
     ;['webm', 'mp3', 'wav'].forEach(format => {
         const option = document.createElement('option')
         option.value = format
-        option.textContent = format.toUpperCase()
+        option.textContent = format
         formatSelect.appendChild(option)
     })
 
