@@ -108,28 +108,62 @@ function createMicrophoneSelect(microphoneId) {
     const microphoneSelect = document.createElement('select')
     microphoneSelect.id = 'microphoneSelect'
 
-    // Populate microphone options
+    // Add a default option
+    const defaultOption = document.createElement('option')
+    defaultOption.value = ''
+    defaultOption.textContent = 'Select microphone'
+    microphoneSelect.appendChild(defaultOption)
+
+    // Populate microphone options without requesting permissions
     navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then(() => navigator.mediaDevices.enumerateDevices())
+        .enumerateDevices()
         .then(devices => {
-            const audioInputDevices = devices.filter(
-                device => device.kind === 'audioinput' && device.label.length
-            )
-            audioInputDevices.forEach(device => {
+            const audioInputDevices = devices.filter(device => device.kind === 'audioinput')
+            audioInputDevices.forEach((device, index) => {
                 const option = document.createElement('option')
                 option.value = device.deviceId
-                option.textContent =
-                    device.label || `Microphone ${microphoneSelect.options.length + 1}`
+                option.textContent = device.label || `Microphone ${index + 1}`
                 microphoneSelect.appendChild(option)
             })
 
-            microphoneSelect.value = microphoneId ?? audioInputDevices[0].deviceId
+            // Set the selected microphone if available
+            if (microphoneId) microphoneSelect.value = microphoneId
+
+            // If no labels are available, offer to request permissions
+            if (!audioInputDevices.every(device => !device.label)) return
+
+            const permissionOption = document.createElement('option')
+            permissionOption.value = 'request-permission'
+            permissionOption.textContent = 'Grant microphone permissions'
+            microphoneSelect.appendChild(permissionOption)
         })
         .catch(err => console.error('Error enumerating devices', err))
 
     microphoneSelect.addEventListener('change', event => {
-        updateSettings({ microphoneId: event.target.value })
+        if (event.target.value === 'request-permission') {
+            // Request microphone permissions and re-enumerate devices
+            navigator.mediaDevices
+                .getUserMedia({ audio: true })
+                .then(() => navigator.mediaDevices.enumerateDevices())
+                .then(devices => {
+                    // Clear existing options
+                    while (microphoneSelect.firstChild) {
+                        microphoneSelect.removeChild(microphoneSelect.firstChild)
+                    }
+                    // Re-populate the select with labeled devices
+                    devices
+                        .filter(device => device.kind === 'audioinput')
+                        .forEach((device, index) => {
+                            const option = document.createElement('option')
+                            option.value = device.deviceId
+                            option.textContent = device.label || `Microphone ${index + 1}`
+                            microphoneSelect.appendChild(option)
+                        })
+                })
+                .catch(err => console.error('Error getting microphone permission', err))
+        } else {
+            updateSettings({ microphoneId: event.target.value })
+        }
     })
 
     return microphoneSelect
