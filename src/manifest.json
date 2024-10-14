@@ -24,7 +24,7 @@
     "permissions": ["downloads", "storage", "activeTab", "tabCapture"],
     "web_accessible_resources": [
         {
-            "resources": ["main.html", "main.js", "encoder/*.js", "recorder/*.js", "ui/*.js", "style.css", "worker.js", "lib/*.js"],
+            "resources": ["main.html", "main.js", "encoder/*.js", "recorder/*.js", "ui/*.js", "style.css", "lib/*.js"],
             "matches": ["<all_urls>"]
         }
     ]
