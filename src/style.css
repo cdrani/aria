@@ -175,7 +175,6 @@ body {
 .result {
     display: flex;
     justify-content: space-between;
-    margin-top: 20px;
 }
 
 .result .extension-button {
@@ -291,7 +290,6 @@ body {
 
 #waveform {
     width: 100%;
-    margin-top: 20px;
     border: 1px solid #ddd;
     border-radius: 4px;
     transition: display 0.3s ease-in-out;
