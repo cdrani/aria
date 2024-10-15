@@ -13,14 +13,6 @@ export default defineConfig({
 		}
 	},
 	plugins: [svelte(), crx({ manifest: manifest as unknown as ManifestV3Export })],
-	// build: {
-	// 	outDir: 'dist',
-	// 	rollupOptions: {
-	// 		input: {
-	// 			main: 'src/main.ts'
-	// 		}
-	// 	}
-	// },
 	server: {
 		port: 5173,
 		strictPort: true,
