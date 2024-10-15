@@ -1,8 +1,9 @@
 import {
     hideWaveform,
     updateWavesurfer,
-    updateDownloadLink,
     resetRecordButton,
+    updateDownloadLink,
+    updateRecordingProgress,
     setOriginalRecordedBlob,
     resetOriginalRecordedBlob,
     updateRecordingButtonState,
@@ -12,6 +13,10 @@ import { cleanupResources } from '../encoder'
 
 let audioRecorder = null
 let recordingType = 'tab'
+let recordingStartTime = null
+let recordingInterval = null
+let totalRecordingTime = 0
+let lastUpdateTime = null
 
 export async function toggleRecording(type, originalTab, discard = false) {
     if (!audioRecorder) {
@@ -28,17 +33,29 @@ export async function toggleRecording(type, originalTab, discard = false) {
         resetOriginalRecordedBlob()
         await startRecording({ type, originalTab })
     } else if (audioRecorder.isPaused) {
-        audioRecorder.resumeRecording()
+        resumeRecording()
     } else {
-        audioRecorder.pauseRecording()
+        pauseRecording()
     }
 
     const { isRecording, isPaused } = audioRecorder
     updateRecordingButtonState({ isRecording, isPaused, type })
 }
 
+function updateProgress() {
+    const currentTime = Date.now()
+    if (lastUpdateTime) {
+        totalRecordingTime += currentTime - lastUpdateTime
+    }
+    lastUpdateTime = currentTime
+    updateRecordingProgress(totalRecordingTime / 1000)
+}
+
 async function startRecording({ type, originalTab }) {
     try {
+        recordingStartTime = Date.now()
+        lastUpdateTime = recordingStartTime
+        totalRecordingTime = 0
         const settings = await new Promise(resolve =>
             chrome.runtime.sendMessage({ action: 'GET_SETTINGS' }, resolve)
         )
@@ -48,11 +65,28 @@ async function startRecording({ type, originalTab }) {
 
         // Initialize audio player for playback
         audioRecorder.createAudioPlayer()
+        recordingInterval = setInterval(updateProgress, 100)
     } catch (error) {
         console.error('Error starting recording:', error)
         resetRecordButton(type)
         resetOriginalRecordedBlob()
+        if (recordingInterval) clearInterval(recordingInterval)
     }
+}
+
+function pauseRecording() {
+    audioRecorder.pauseRecording()
+    if (recordingInterval) {
+        clearInterval(recordingInterval)
+        recordingInterval = null
+    }
+    updateProgress() // Update one last time before pausing
+}
+
+function resumeRecording() {
+    audioRecorder.resumeRecording()
+    lastUpdateTime = Date.now()
+    recordingInterval = setInterval(updateProgress, 100)
 }
 
 export function stopRecording() {
@@ -60,6 +94,18 @@ export function stopRecording() {
 
     audioRecorder.stopRecording()
     audioRecorder.closeAudioPlayer()
+
+    if (recordingInterval) {
+        clearInterval(recordingInterval)
+        recordingInterval = null
+    }
+    updateProgress() // Update one last time before stopping
+    clearProgressUI()
+}
+
+function clearProgressUI() {
+    const progressUI = document.getElementById('progress-ui')
+    if (progressUI) progressUI.remove()
 }
 
 export function discardRecording({ audioRecorder, type }) {
@@ -68,8 +114,7 @@ export function discardRecording({ audioRecorder, type }) {
 
     updateRecordingButtonState({ isRecording: false, isPaused: false, type })
 
-    const progressUI = document.getElementById('progress-ui')
-    if (progressUI) progressUI.remove()
+    clearProgressUI()
 
     hideWaveform()
     resetOriginalRecordedBlob()

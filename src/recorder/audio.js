@@ -1,9 +1,4 @@
-import {
-    updateWavesurfer,
-    showRecordingResult,
-    showRecordingProgress,
-    updateRecordingProgress,
-} from './ui'
+import { updateWavesurfer, showRecordingResult, showRecordingProgress } from './ui'
 
 export default class AudioRecorder {
     constructor() {
@@ -79,7 +74,6 @@ export default class AudioRecorder {
 
         this.mediaRecorder.ondataavailable = event => {
             if (event.data.size > 0) this.chunks.push(event.data)
-            updateRecordingProgress(this.chunks.length)
 
             const currentBlob = new Blob(this.chunks, { type: 'audio/webm' })
             const audioUrl = URL.createObjectURL(currentBlob)

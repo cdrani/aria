@@ -152,11 +152,24 @@ export function showRecordingProgress() {
     showWaveform()
 }
 
-export function updateRecordingProgress(chunksCount) {
+export function updateRecordingProgress(duration) {
     const progressDiv = document.getElementById('recordingProgress')
     if (progressDiv) {
-        progressDiv.textContent = `Recording in progress: ${chunksCount} chunks`
+        const formattedDuration = formatDuration(duration)
+        progressDiv.textContent = `Recording Length: ${formattedDuration}`
     }
+}
+
+function formatDuration(durationInSeconds) {
+    const hours = Math.floor(durationInSeconds / 3600)
+    const minutes = Math.floor((durationInSeconds % 3600) / 60)
+    const seconds = Math.floor(durationInSeconds % 60)
+
+    return hours > 0
+        ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds
+              .toString()
+              .padStart(2, '0')}`
+        : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
 }
 
 export function updateRecordingButtonState({ isRecording, isPaused, type }) {
