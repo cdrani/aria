@@ -41,6 +41,7 @@
 	},
 	"dependencies": {
 		"lamejs": "^1.2.1",
+		"mode-watcher": "^0.4.1",
 		"wavesurfer.js": "^7.8.6"
 	}
 }
