@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ModeWatcher } from 'mode-watcher'
   import { onMount } from 'svelte';
   import TabInfo from '$lib/components/TabInfo.svelte';
   import Settings from '$lib/components/Settings.svelte';
@@ -16,6 +17,8 @@
     currentTab.set(tab);
   });
 </script>
+
+<ModeWatcher />
 
 <main class="container mx-auto p-4 space-y-4">
   <TabInfo />
