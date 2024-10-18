@@ -1,167 +1,245 @@
-import type { Settings } from '$lib/types';
-import { encodeAudio } from '$lib/encoder';
+import type { Settings } from '$lib/types'
+import { encodeAudio } from '$lib/encoder'
 
 export default class AudioRecorder {
-	private mediaRecorder: MediaRecorder | null = null;
-	private audioContext: AudioContext | null = null;
-	private sourceNode: MediaStreamAudioSourceNode | null = null;
-	private gainNode: GainNode | null = null;
-	private destinationNode: MediaStreamAudioDestinationNode | null = null;
-	private audioChunks: ArrayBufferLike[] = [];
-	public isRecording = false;
-	public isPaused = false;
-	public isMuted = false;
+    private type: 'tab' | 'mic' = 'tab'
+    private mediaRecorder: MediaRecorder | null = null
+    private chunks: Blob[] = []
+    private stream: MediaStream | null = null
+    public isRecording = false
+    public isPaused = false
+    public isMuted = false
+    private audioPlayer: HTMLAudioElement | null = null
+    private tabId: number | null = null
+    private settings: Settings | null = null
+    private discarding: boolean = false
+    private onDataAvailable: (audioUrl: string | null) => void = () => {}
 
-	async initialize(type: 'tab' | 'microphone', tabId: number, settings: Settings) {
-		const stream = await this.getAudioStream(type, tabId, settings);
-		this.audioContext = new AudioContext();
-		this.sourceNode = this.audioContext.createMediaStreamSource(stream);
-		this.gainNode = this.audioContext.createGain();
-		this.destinationNode = this.audioContext.createMediaStreamDestination();
+    async initialize(type: 'tab' | 'mic', tabId: number, settings: Settings) {
+        this.type = type
+        this.settings = settings
+        if (this.type === 'tab') {
+            await this.captureTabAudio(tabId)
+        } else if (this.type === 'mic') {
+            await this.captureMicrophoneAudio()
+        }
+    }
 
-		this.sourceNode.connect(this.gainNode);
-		this.gainNode.connect(this.destinationNode);
+    private async captureMicrophoneAudio() {
+        try {
+            const constraints = {
+                audio: this.settings?.microphoneId ? { deviceId: this.settings.microphoneId } : true
+            }
+            this.stream = await navigator.mediaDevices.getUserMedia(constraints)
+            this.setupRecorder()
+        } catch (error) {
+            console.error('Error capturing microphone audio: ', error)
+        }
+    }
 
-		const options = this.getMediaRecorderOptions(settings);
-		this.mediaRecorder = new MediaRecorder(this.destinationNode.stream, options);
+    private async captureTabAudio(tabId: number) {
+        try {
+            const streamId = await new Promise<string>((resolve, reject) => {
+                chrome.tabCapture.getMediaStreamId({ targetTabId: tabId }, (streamId) => {
+                    if (chrome.runtime.lastError) {
+                        reject(chrome.runtime.lastError)
+                    } else {
+                        resolve(streamId)
+                    }
+                })
+            })
 
-		this.mediaRecorder.ondataavailable = (event) => {
-			if (event.data.size > 0) {
-				this.audioChunks.push(event.data);
-			}
-		};
+            this.stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    mandatory: { chromeMediaSource: 'tab', chromeMediaSourceId: streamId }
+                } as MediaTrackConstraints
+            })
 
-		this.mediaRecorder.onstop = () => {
-			const audioBlob = new Blob(this.audioChunks, { type: `audio/${settings.format}` });
-			this.handleRecordedAudio(audioBlob, settings.format);
-		};
+            this.setupRecorder()
+            this.tabId = tabId
+            await this.createAudioPlayer()
+        } catch (error) {
+            console.error('Error capturing tab audio: ', error)
+        }
+    }
 
-		this.setMuted(settings.muted);
-	}
+    private setupRecorder() {
+        if (!this.stream) return
 
-	private async getAudioStream(
-		type: 'tab' | 'microphone',
-		tabId: number,
-		settings: Settings
-	): Promise<MediaStream> {
-		if (type === 'tab') {
-			const streamId = await new Promise<string>((resolve) =>
-				chrome.tabCapture.getMediaStreamId({ targetTabId: tabId }, resolve)
-			);
-			return await navigator.mediaDevices.getUserMedia({
-				audio: {
-					mandatory: {
-						chromeMediaSource: 'tab',
-						chromeMediaSourceId: streamId
-					}
-				},
-				video: false
-			} as MediaStreamConstraints);
-		} else {
-			return await navigator.mediaDevices.getUserMedia({
-				audio: { deviceId: settings.microphoneId || undefined }
-			});
-		}
-	}
+        const options = {
+            mimeType: 'audio/webm',
+            audioBitsPerSecond: this.settings!.quality * 1000
+        }
+        this.mediaRecorder = new MediaRecorder(this.stream, options)
 
-	private getMediaRecorderOptions(settings: Settings): MediaRecorderOptions {
-		const mimeType = `audio/${settings.format}`;
-		if (MediaRecorder.isTypeSupported(mimeType)) {
-			return { mimeType };
-		}
-		console.warn(`${mimeType} is not supported, using default`);
-		return {};
-	}
+        this.mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size <= 0) return
 
-	startRecording() {
-		if (!this.mediaRecorder) return
+            this.chunks.push(event.data)
+            const currentBlob = new Blob(this.chunks, { type: 'audio/webm' })
+            const audioUrl = URL.createObjectURL(currentBlob)
+            this.onDataAvailable(audioUrl)
+        }
 
-		this.mediaRecorder.start();
-		this.isRecording = true;
-		this.isPaused = false;
-	}
+        this.mediaRecorder.onstop = () => {
+            if (!this.discarding) {
+                const audioBlob = new Blob(this.chunks, { type: 'audio/webm' })
+                this.onRecordingComplete(audioBlob)
+            }
+            this.discarding = false
+        }
+    }
 
-	pauseRecording() {
-		if (this.mediaRecorder && this.isRecording) {
-			this.mediaRecorder.pause();
-			this.isPaused = true;
-		}
-	}
+    startRecording() {
+        if (!(this.mediaRecorder && !this.isRecording)) return
 
-	resumeRecording() {
-		if (this.mediaRecorder && this.isPaused) {
-			this.mediaRecorder.resume();
-			this.isPaused = false;
-		}
-	}
+        this.mediaRecorder.start(250)
+        this.isRecording = true
+    }
 
-	async stopRecording(settings: Settings) {
-		if (!(this.mediaRecorder && this.isRecording)) return;
+    stopRecording(discarding: boolean = false) {
+        if (!(this.mediaRecorder && this.isRecording)) return
 
-		this.mediaRecorder.stop();
-		this.isRecording = false;
-		this.isPaused = false;
-		const audioData = this.concatenateAudioChunks();
-		const encodedBlob = await encodeAudio(audioData, settings);
-		this.handleRecordedAudio(encodedBlob, settings.format);
-		this.audioChunks = [];
-	}
+        this.discarding = discarding
+        this.mediaRecorder.stop()
+        this.isRecording = false
+        this.isPaused = false
+        this.releaseStream()
+    }
 
-	setMuted(muted: boolean) {
-		if (this.gainNode) {
-			this.gainNode.gain.setValueAtTime(muted ? 0 : 1, this.audioContext!.currentTime);
-			this.isMuted = muted;
-		}
-	}
+    pauseRecording() {
+        if (!(this.mediaRecorder && this.isRecording && !this.isPaused)) return
 
-	toggleMute() {
-		this.setMuted(!this.isMuted);
-	}
+        this.mediaRecorder.pause()
+        this.isPaused = true
+    }
 
-	private handleRecordedAudio(audioBlob: Blob, format: string) {
-		const url = URL.createObjectURL(audioBlob);
-		const a = document.createElement('a');
-		a.style.display = 'none';
-		a.href = url;
-		a.download = `recorded_audio.${format}`;
-		document.body.appendChild(a);
-		a.click();
-		setTimeout(() => {
-			document.body.removeChild(a);
-			window.URL.revokeObjectURL(url);
-		}, 100);
-	}
+    resumeRecording() {
+        if (!(this.mediaRecorder && this.isRecording && this.isPaused)) return
 
-	cleanup() {
-		if (this.mediaRecorder) {
-			this.mediaRecorder.stop();
-		}
-		if (this.audioContext) {
-			this.audioContext.close();
-		}
-		this.sourceNode?.disconnect();
-		this.gainNode?.disconnect();
-		this.destinationNode?.disconnect();
-		this.mediaRecorder = null;
-		this.audioContext = null;
-		this.sourceNode = null;
-		this.gainNode = null;
-		this.destinationNode = null;
-		this.audioChunks = [];
-		this.isRecording = false;
-		this.isPaused = false;
-		this.isMuted = false;
-	}
+        this.mediaRecorder.resume()
+        this.isPaused = false
+    }
 
-	private concatenateAudioChunks(): Float32Array {
-		const totalLength = this.audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
-		const result = new Float32Array(totalLength);
-		let offset = 0;
-		for (const chunk of this.audioChunks) {
-			const float32Array = new Float32Array(chunk);
-			result.set(float32Array, offset);
-			offset += float32Array.length;
-		}
-		return result;
-	}
+    toggleMute() {
+        if (!this.stream) return
+
+        this.isMuted = !this.isMuted
+        this.stream.getAudioTracks().forEach((track) => (track.enabled = !this.isMuted))
+
+        if (this.audioPlayer) {
+            this.audioPlayer.muted = this.isMuted
+        }
+    }
+
+    discardRecording() {
+        if (this.isRecording) this.stopRecording(true)
+        this.chunks = []
+        this.mediaRecorder = null
+        this.onDataAvailable(null) // Explicitly call onDataAvailable with null
+    }
+
+    private onRecordingComplete(_blob: Blob) {
+        this.releaseStream()
+    }
+
+    private async createAudioPlayer() {
+        if (!this.stream) return
+
+        this.audioPlayer = new Audio()
+        this.audioPlayer.srcObject = this.stream
+        this.audioPlayer.muted = this.isMuted
+        await this.audioPlayer.play()
+    }
+
+    private closeAudioPlayer() {
+        if (!this.audioPlayer) return
+
+        this.audioPlayer.pause()
+        this.audioPlayer.srcObject = null
+        this.audioPlayer = null
+    }
+
+    private releaseStream() {
+        this.closeAudioPlayer()
+
+        if (this.stream) {
+            this.stream.getTracks().forEach((track) => track.stop())
+            this.stream = null
+        }
+        if (this.tabId) {
+            chrome.tabCapture.getCapturedTabs((tabs) => {
+                if (tabs.some((tab) => tab.tabId === this.tabId)) {
+                    chrome.tabCapture.stopCapture(this.tabId!, () => {
+                        if (chrome.runtime.lastError) {
+                            console.error('Error stopping tab capture:', chrome.runtime.lastError)
+                        }
+                    })
+                }
+            })
+        }
+        this.tabId = null
+    }
+
+    cleanup() {
+        if (this.stream) this.discardRecording()
+        this.type = 'tab'
+        this.settings = null
+    }
+
+    getRecordedBlob(): Blob | null {
+        if (this.chunks.length === 0) return null
+        return new Blob(this.chunks, { type: 'audio/webm' })
+    }
+
+    setOnDataAvailable(callback: (audioUrl: string | null) => void) {
+        this.onDataAvailable = callback
+    }
+
+    async downloadRecording() {
+        if (this.chunks.length === 0) {
+            console.error('No recording available to download')
+            return
+        }
+
+        const blob = new Blob(this.chunks, { type: 'audio/webm' })
+        const arrayBuffer = await blob.arrayBuffer()
+        const audioData = new Float32Array(arrayBuffer)
+
+        try {
+            const encodedBlob = await encodeAudio(audioData, this.settings!)
+            const url = URL.createObjectURL(encodedBlob)
+            const a = document.createElement('a')
+            a.style.display = 'none'
+            a.href = url
+            a.download = `recording.${this.settings!.format}`
+            document.body.appendChild(a)
+            a.click()
+            setTimeout(() => {
+                document.body.removeChild(a)
+                window.URL.revokeObjectURL(url)
+            }, 100)
+        } catch (error) {
+            console.error('Error encoding audio:', error)
+        }
+    }
+
+    async prepareForDownload(): Promise<Blob> {
+        if (this.chunks.length === 0) {
+            throw new Error('No recording available to download')
+        }
+
+        const blob = new Blob(this.chunks, { type: 'audio/webm' })
+        // const arrayBuffer = await blob.arrayBuffer()
+
+        // // Convert ArrayBuffer to Float32Array
+        // const view = new DataView(arrayBuffer)
+        // const floatArray = new Float32Array(view.byteLength / 4)
+        // for (let i = 0; i < floatArray.length; i++) {
+        //     floatArray[i] = view.getFloat32(i * 4, true)
+        // }
+
+        // ({ floatArray })
+        return blob
+    }
 }
