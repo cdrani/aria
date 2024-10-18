@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store'
-import type { Settings, Tab } from './types'
+import type { Settings, Tab, AudioType } from './types'
 
 export const settings = writable<Settings>({
     muted: false,
@@ -9,3 +9,4 @@ export const settings = writable<Settings>({
 })
 
 export const currentTab = writable<Tab | null>(null)
+export const audioType = writable<AudioType>('tab')

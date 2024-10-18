@@ -4,7 +4,7 @@
     import { Button } from './ui/button'
     import type { RecorderState } from '$lib/types'
     import { recorderStore } from '$lib/stores/recorder'
-    import { currentTab, settings } from '$lib/stores'
+    import { currentTab, settings, audioType } from '$lib/stores'
     import AudioSelect from '$lib/components/AudioSelect.svelte'
     import { initEncoderWorker, terminateEncoderWorker } from '$lib/encoder'
 
@@ -12,7 +12,6 @@
     let isRecording = false
     let isPaused = false
     let audioUrl: string | null = null
-    let recordingType: 'tab' | 'mic' = 'tab'
 
     const unsubscribe = recorderStore.subscribe((state: RecorderState) => {
         isActive = state.active
@@ -26,12 +25,11 @@
         recorderStore.cleanup()
     })
 
-    async function handleRecordClick(type: 'tab' | 'mic') {
+    async function handleRecordClick() {
         if (!$currentTab) return
         if (!isRecording) {
-            await recorderStore.initialize(type, $currentTab, $settings)
+            await recorderStore.initialize($audioType, $currentTab, $settings)
             recorderStore.start()
-            recordingType = type
         } else if (isPaused) {
             recorderStore.resume()
         } else {
@@ -56,7 +54,7 @@
 
 <div class="flex flex-col space-y-4 rounded-md border-2 border-secondary p-4">
     <div class="flex items-center justify-between">
-        <AudioSelect type={recordingType} />
+        <AudioSelect />
     </div>
 
     <div class="flex items-center justify-between">
@@ -104,7 +102,7 @@
                 variant="outline"
                 id="middle-button"
                 class="rounded-full border-red-600"
-                on:click={() => handleRecordClick(recordingType)}
+                on:click={handleRecordClick}
             >
                 {#if isRecording && !isPaused}
                     <!-- pause icon -->

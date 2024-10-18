@@ -18,3 +18,5 @@ export interface RecorderState {
     isMuted: boolean
     audioUrl: string | null
 }
+
+export type AudioType = 'tab' | 'mic'

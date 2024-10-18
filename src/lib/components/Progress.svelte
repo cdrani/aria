@@ -21,7 +21,7 @@
             waveColor: 'rebeccapurple',
             progressColor: 'rebeccapurple',
             cursorColor: 'rebeccapurple',
-            height: 100
+            height: 75
         })
 
         wavesurfer.on('play', () => (isPlaying = true))
