@@ -1,8 +1,8 @@
-import type { Settings } from '$lib/types'
 import { encodeAudio } from '$lib/encoder'
+import type { Settings, AudioType } from '$lib/types'
 
 export default class AudioRecorder {
-    private type: 'tab' | 'mic' = 'tab'
+    private type: AudioType = 'tab'
     private mediaRecorder: MediaRecorder | null = null
     private chunks: Blob[] = []
     private stream: MediaStream | null = null
@@ -15,7 +15,7 @@ export default class AudioRecorder {
     private discarding: boolean = false
     private onDataAvailable: (audioUrl: string | null) => void = () => {}
 
-    async initialize(type: 'tab' | 'mic', tabId: number, settings: Settings) {
+    async initialize(type: AudioType, tabId: number, settings: Settings) {
         this.type = type
         this.settings = settings
         if (this.type === 'tab') {
@@ -83,8 +83,7 @@ export default class AudioRecorder {
 
         this.mediaRecorder.onstop = () => {
             if (!this.discarding) {
-                const audioBlob = new Blob(this.chunks, { type: 'audio/webm' })
-                this.onRecordingComplete(audioBlob)
+                this.onRecordingComplete()
             }
             this.discarding = false
         }
@@ -139,7 +138,7 @@ export default class AudioRecorder {
         this.onDataAvailable(null) // Explicitly call onDataAvailable with null
     }
 
-    private onRecordingComplete(_blob: Blob) {
+    private onRecordingComplete() {
         this.releaseStream()
     }
 
@@ -229,17 +228,6 @@ export default class AudioRecorder {
             throw new Error('No recording available to download')
         }
 
-        const blob = new Blob(this.chunks, { type: 'audio/webm' })
-        // const arrayBuffer = await blob.arrayBuffer()
-
-        // // Convert ArrayBuffer to Float32Array
-        // const view = new DataView(arrayBuffer)
-        // const floatArray = new Float32Array(view.byteLength / 4)
-        // for (let i = 0; i < floatArray.length; i++) {
-        //     floatArray[i] = view.getFloat32(i * 4, true)
-        // }
-
-        // ({ floatArray })
-        return blob
+        return new Blob(this.chunks, { type: 'audio/webm' })
     }
 }

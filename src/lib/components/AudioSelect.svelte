@@ -1,22 +1,23 @@
 <script lang="ts">
-    import type { Writable } from 'svelte/store'
-    import { writable } from 'svelte/store'
+    import { audioType } from '$lib/stores'
+    import type { AudioType } from '$lib/types'
     import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
 
-    type SelectAudio = 'tab' | 'mic'
-    export let type: SelectAudio = 'tab'
-    let audio: Writable<SelectAudio | undefined> = writable(type)
-
     function setAudio(selection: string | undefined) {
-        audio.set(selection as SelectAudio)
+        audioType.set(selection as AudioType)
     }
 
-    $: isTab = $audio == 'tab'
-    $: isMic = $audio == 'mic'
+    $: isTab = $audioType == 'tab'
+    $: isMic = $audioType == 'mic'
 </script>
 
 <div class="flex items-center space-x-2">
-    <ToggleGroup type="single" size="xs" value={$audio} onValueChange={(value) => setAudio(value)}>
+    <ToggleGroup
+        type="single"
+        size="xs"
+        value={$audioType}
+        onValueChange={(value) => setAudio(value)}
+    >
         <ToggleGroupItem
             value="tab"
             disabled={isTab}
