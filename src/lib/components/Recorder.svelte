@@ -1,12 +1,16 @@
 <script lang="ts">
     import { onDestroy } from 'svelte'
-    import { Label } from './ui/label'
-    import { Button } from './ui/button'
     import type { RecorderState } from '$lib/types'
     import { recorderStore } from '$lib/stores/recorder'
+    import { terminateEncoderWorker } from '$lib/encoder'
     import { currentTab, settings, audioType } from '$lib/stores'
-    import AudioSelect from '$lib/components/AudioSelect.svelte'
-    import { initEncoderWorker, terminateEncoderWorker } from '$lib/encoder'
+
+    import { Label } from './ui/label'
+    import { Button } from './ui/button'
+    import MicSelect from './MicSelect.svelte'
+    import ToggleMute from './ToggleMute.svelte'
+    import AudioSelect from './AudioSelect.svelte'
+    import DownloadDialog from './DownloadDialog.svelte'
 
     let isActive = false
     let isRecording = false
@@ -42,31 +46,32 @@
         terminateEncoderWorker()
     }
 
-    async function handleStopDownloadClick() {
-        if (isRecording) {
-            recorderStore.stop()
-        } else {
-            initEncoderWorker()
-            await recorderStore.download()
-        }
+    async function handleStopClick() {
+        if (isRecording) recorderStore.stop()
     }
 </script>
 
 <div class="flex flex-col space-y-4 rounded-md border-2 border-secondary p-4">
     <div class="flex items-center justify-between">
         <AudioSelect />
+
+        <ToggleMute />
     </div>
+
+    {#if $audioType === 'mic'}
+        <MicSelect />
+    {/if}
 
     <div class="flex items-center justify-between">
         <div class="grid max-w-sm place-items-center gap-2">
-            <Button
-                size="icon"
-                id="left-button"
-                variant="outline"
-                class="rounded-full"
-                on:click={handleStopDownloadClick}
-            >
-                {#if !isActive || isRecording}
+            {#if !isActive || isRecording}
+                <Button
+                    size="icon"
+                    id="left-button"
+                    variant="outline"
+                    class="rounded-full border-2 border-red-600"
+                    on:click={handleStopClick}
+                >
                     <svg
                         class="fill-red-600"
                         xmlns="http://www.w3.org/2000/svg"
@@ -76,24 +81,11 @@
                     >
                         <rect width="16" height="16" x="2" y="2" rx="1" class="fill-red-600" />
                     </svg>
-                {:else}
-                    <!-- download icon -->
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="1.5rem"
-                        height="1.5rem"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            class="fill-red-600"
-                            d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zM12 2L4 5v6h4v6l8-3v-6h-4z"
-                        />
-                    </svg>
-                {/if}
-            </Button>
-            <Label for="left-button">
-                {!isActive || isRecording ? 'Stop' : 'Download'}
-            </Label>
+                </Button>
+                <Label for="left-button">Stop</Label>
+            {:else}
+                <DownloadDialog />
+            {/if}
         </div>
 
         <div class="grid max-w-sm place-items-center gap-2">
@@ -101,7 +93,7 @@
                 size="lg"
                 variant="outline"
                 id="middle-button"
-                class="rounded-full border-red-600"
+                class="rounded-full border-2 border-red-600"
                 on:click={handleRecordClick}
             >
                 {#if isRecording && !isPaused}
@@ -173,13 +165,12 @@
                 size="icon"
                 variant="outline"
                 id="right-button"
-                disabled={!audioUrl}
-                class="rounded-full border-red-600"
+                class="rounded-full border-2 border-red-600"
                 on:click={handleDiscardClick}
             >
                 <svg
-                    width="1rem"
-                    height="1rem"
+                    width="1.25rem"
+                    height="1.25rem"
                     viewBox="0 0 20 20"
                     xmlns="http://www.w3.org/2000/svg"
                 >
