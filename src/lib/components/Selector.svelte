@@ -2,9 +2,7 @@
     import * as Select from './ui/select'
     import type { Writable } from 'svelte/store'
     import { writable } from 'svelte/store'
-
-    type Selection = { value: unknown; label?: string }
-    type SelectValue = string | number | boolean
+    import type { Selection, SelectValue } from '$lib/types'
 
     export let label: string
     export let selected: Selection
@@ -12,10 +10,10 @@
     export let data: Array<{ label: string; value: number | string | boolean }> = []
     export let handleChange: ({
         key,
-        value
+        data
     }: {
         key: string
-        value: SelectValue
+        data: { value: SelectValue; label: string | undefined }
     }) => void = () => {}
 
     let selection: Writable<Selection> = writable(selected)
@@ -27,18 +25,23 @@
 
 <Select.Root
     selected={$selection}
-    onSelectedChange={(select) => handleChange({ key: label, value: select?.value })}
+    preventScroll={false}
+    onSelectedChange={(select) =>
+        handleChange({ key: label, data: { value: select?.value, label: select?.label } })}
 >
     <Select.Trigger class="w-180px">
         <Select.Value {placeholder} />
     </Select.Trigger>
-    <Select.Content>
+    <Select.Content class="max-h-[120px] overflow-y-scroll">
         <Select.Group>
             <Select.Label class="capitalize">{label}</Select.Label>
-            {#each data as item}
+            {#each data as item, index}
                 <Select.Item value={item.value} label={item.label}>
                     {item.label}
                 </Select.Item>
+                {#if index !== data.length - 1}
+                    <Select.Separator />
+                {/if}
             {/each}
         </Select.Group>
     </Select.Content>
