@@ -2,7 +2,10 @@ export interface Settings {
     muted: boolean
     format: 'webm' | 'mp3' | 'wav'
     quality: number
-    microphoneId: string | null
+    microphone: {
+        id: null | string
+        label: null | string
+    }
 }
 
 export interface Tab {
@@ -20,3 +23,9 @@ export interface RecorderState {
 }
 
 export type AudioType = 'tab' | 'mic'
+
+export interface Selection {
+    value: unknown
+    label?: string
+}
+export type SelectValue = string | number | boolean
