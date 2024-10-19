@@ -1,27 +1,27 @@
 <script lang="ts">
     import { Toggle } from './ui/toggle'
-    import type { Writable } from 'svelte/store'
-    import { writable } from 'svelte/store'
+    import { settings } from '$lib/stores'
+    import { recorderStore } from '$lib/stores/recorder'
 
-    export let checked: boolean = false
-    export let handleToggle: ({ key, value }: { key: string; value: boolean }) => void = () => {}
+    function updateSettings() {
+        chrome.storage.sync.set({ settings: $settings })
+    }
 
-    let pressed: Writable<boolean> = writable(checked)
-
-    $: if (checked !== $pressed) {
-        pressed.set(checked)
+    function handleToggle(muted: boolean) {
+        recorderStore.toggleMute()
+        $settings.muted = muted
+        updateSettings()
     }
 </script>
 
 <Toggle
-    size="lg"
-    variant="outline"
-    pressed={$pressed}
+    size="sm"
+    class="h-8 w-8"
     aria-label="toggle mute"
-    onPressedChange={(checked) => handleToggle({ key: 'muted', value: checked })}
-    class="h-9"
+    pressed={$settings.muted}
+    onPressedChange={handleToggle}
 >
-    {#if $pressed}
+    {#if $settings.muted}
         <svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 36 36">
             <path
                 fill="currentColor"
