@@ -1,11 +1,9 @@
 <script lang="ts">
-    import { ModeWatcher } from 'mode-watcher'
     import { onMount } from 'svelte'
-    import TabInfo from '$lib/components/TabInfo.svelte'
-    import Settings from '$lib/components/Settings.svelte'
+    import { ModeWatcher } from 'mode-watcher'
+    import { settings, currentTab } from '$lib/stores'
     import Recorder from '$lib/components/Recorder.svelte'
     import Progress from '$lib/components/Progress.svelte'
-    import { settings, currentTab } from '$lib/stores'
 
     onMount(async () => {
         const storedSettings = await chrome.storage.sync.get('settings')
@@ -21,8 +19,6 @@
 <ModeWatcher />
 
 <main class="container mx-auto space-y-4 p-4">
-    <TabInfo />
-    <Settings />
     <Progress />
     <Recorder />
 </main>
@@ -30,6 +26,6 @@
 <style>
     :global(body) {
         width: 350px;
-        height: 500px;
+        height: 400px;
     }
 </style>
