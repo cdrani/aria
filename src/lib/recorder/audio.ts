@@ -28,7 +28,9 @@ export default class AudioRecorder {
     private async captureMicrophoneAudio() {
         try {
             const constraints = {
-                audio: this.settings?.microphoneId ? { deviceId: this.settings.microphoneId } : true
+                audio: this.settings?.microphone?.id
+                    ? { deviceId: this.settings.microphone.id }
+                    : true
             }
             this.stream = await navigator.mediaDevices.getUserMedia(constraints)
             this.setupRecorder()
