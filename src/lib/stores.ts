@@ -5,7 +5,10 @@ export const settings = writable<Settings>({
     muted: false,
     format: 'webm',
     quality: 128,
-    microphoneId: null
+    microphone: {
+        id: null,
+        label: null
+    }
 })
 
 export const currentTab = writable<Tab | null>(null)
