@@ -21,7 +21,7 @@
             waveColor: 'rebeccapurple',
             progressColor: 'rebeccapurple',
             cursorColor: 'rebeccapurple',
-            height: 75
+            height: 50
         })
 
         wavesurfer.on('play', () => (isPlaying = true))
@@ -74,7 +74,7 @@
 </script>
 
 <div class="{isActive && audioUrl ? 'block' : 'hidden'} mb-4 w-full rounded-md bg-secondary p-4">
-    <div bind:this={waveformContainer} class="h-24 w-full rounded-md" />
+    <div bind:this={waveformContainer} class="h-16 w-full rounded-md" />
 
     {#if isRecording}
         <p class="text-xl font-bold text-muted-foreground">{formatTime(duration, true)}</p>
