@@ -65,7 +65,7 @@ function createRecorderStore() {
             recorder.cleanup()
             update(() => ({ isRecording: false, isPaused: false, isMuted: false, audioUrl: null }))
         },
-        download: async () => {
+        download: async (fileName: string) => {
             try {
                 const audioBlob = await recorder.prepareForDownload()
                 const currentSettings = get(settings) as Settings
@@ -78,7 +78,7 @@ function createRecorderStore() {
                 const a = document.createElement('a')
                 a.style.display = 'none'
                 a.href = url
-                a.download = `recording.${currentSettings.format}`
+                a.download = fileName
                 document.body.appendChild(a)
                 a.click()
                 setTimeout(() => {
