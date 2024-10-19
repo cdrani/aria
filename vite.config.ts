@@ -9,7 +9,7 @@ import manifest from './manifest.json'
 export default defineConfig({
     resolve: {
         alias: {
-            $lib: path.resolve(__dirname, '/src/lib')
+            $lib: path.resolve('./src/lib')
         }
     },
     plugins: [svelte(), crx({ manifest: manifest as unknown as ManifestV3Export })],
