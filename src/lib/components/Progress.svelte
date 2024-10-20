@@ -36,6 +36,8 @@
 
             if (isActive && audioUrl) {
                 wavesurfer.load(audioUrl)
+            } else {
+                wavesurfer.empty()
             }
         })
 
