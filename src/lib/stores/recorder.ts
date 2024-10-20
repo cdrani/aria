@@ -1,9 +1,9 @@
-import { settings } from '$lib/stores'
 import { get, writable } from 'svelte/store'
 
 import { encodeAudio } from '$lib/encoder'
 import AudioRecorder from '$lib/recorder/audio'
-import type { Settings, Tab, RecorderState } from '$lib/types'
+import { audioType, settings } from '$lib/stores'
+import type { Settings, RecorderState, AudioType } from '$lib/types'
 
 function createRecorderStore() {
     const recorder = new AudioRecorder()
@@ -21,9 +21,11 @@ function createRecorderStore() {
 
     return {
         subscribe,
-        initialize: async (type: 'tab' | 'microphone', tab: Tab, settings: Settings) => {
-            await recorder.initialize(type, tab.id!, settings)
-            update((state) => ({ ...state, isMuted: settings.muted }))
+        initialize: async () => {
+            const type = get(audioType) as AudioType
+            const currentSettings = get(settings) as Settings
+            await recorder.initialize(type, currentSettings)
+            update((state) => ({ ...state, isMuted: currentSettings.muted }))
         },
         start: () => {
             recorder.startRecording()

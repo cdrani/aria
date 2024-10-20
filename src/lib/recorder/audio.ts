@@ -2,7 +2,7 @@ import { encodeAudio } from '$lib/encoder'
 import type { Settings, AudioType } from '$lib/types'
 
 export default class AudioRecorder {
-    private type: AudioType = 'tab'
+    private type: AudioType
     private mediaRecorder: MediaRecorder | null = null
     private chunks: Blob[] = []
     private stream: MediaStream | null = null
@@ -15,11 +15,11 @@ export default class AudioRecorder {
     private discarding: boolean = false
     private onDataAvailable: (audioUrl: string | null) => void = () => {}
 
-    async initialize(type: AudioType, tabId: number, settings: Settings) {
+    async initialize(type: AudioType, settings: Settings) {
         this.type = type
         this.settings = settings
         if (this.type === 'tab') {
-            await this.captureTabAudio(tabId)
+            await this.captureTabAudio()
         } else if (this.type === 'mic') {
             await this.captureMicrophoneAudio()
         }
@@ -39,10 +39,18 @@ export default class AudioRecorder {
         }
     }
 
-    private async captureTabAudio(tabId: number) {
+    private async getCurrentTab() {
+        const tab = await chrome.runtime.sendMessage({ action: 'GET_CURRENT_TAB' })
+        if (!tab) throw new Error('No current active tab')
+        return tab
+    }
+
+    private async captureTabAudio() {
         try {
+            const tab = await this.getCurrentTab()
+
             const streamId = await new Promise<string>((resolve, reject) => {
-                chrome.tabCapture.getMediaStreamId({ targetTabId: tabId }, (streamId) => {
+                chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id }, (streamId) => {
                     if (chrome.runtime.lastError) {
                         reject(chrome.runtime.lastError)
                     } else {
@@ -58,10 +66,10 @@ export default class AudioRecorder {
             })
 
             this.setupRecorder()
-            this.tabId = tabId
+            this.tabId = tab.id
             await this.createAudioPlayer()
         } catch (error) {
-            console.error('Error capturing tab audio: ', error)
+            console.error('Error capturing tab audio: ', error?.message)
         }
     }
 
@@ -94,7 +102,7 @@ export default class AudioRecorder {
     startRecording() {
         if (!(this.mediaRecorder && !this.isRecording)) return
 
-        this.mediaRecorder.start(250)
+        this.mediaRecorder.start(1000)
         this.isRecording = true
     }
 
