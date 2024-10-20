@@ -1,9 +1,9 @@
 <script lang="ts">
-    import { onDestroy } from 'svelte'
+    import { onDestroy, onMount } from 'svelte'
+    import { audioType } from '$lib/stores'
     import type { RecorderState } from '$lib/types'
     import { recorderStore } from '$lib/stores/recorder'
     import { terminateEncoderWorker } from '$lib/encoder'
-    import { currentTab, settings, audioType } from '$lib/stores'
 
     import { Label } from './ui/label'
     import { Button } from './ui/button'
@@ -24,15 +24,9 @@
         audioUrl = state.audioUrl
     })
 
-    onDestroy(() => {
-        unsubscribe()
-        recorderStore.cleanup()
-    })
-
     async function handleRecordClick() {
-        if (!$currentTab) return
         if (!isRecording) {
-            await recorderStore.initialize($audioType, $currentTab, $settings)
+            await recorderStore.initialize()
             recorderStore.start()
         } else if (isPaused) {
             recorderStore.resume()
@@ -49,6 +43,11 @@
     async function handleStopClick() {
         if (isRecording) recorderStore.stop()
     }
+
+    onDestroy(() => {
+        unsubscribe()
+        recorderStore.cleanup()
+    })
 </script>
 
 <div class="flex flex-col space-y-4 rounded-md border-2 border-secondary p-4">

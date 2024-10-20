@@ -1,5 +1,8 @@
 import type { Settings } from './lib/types'
 
+let currentTab: chrome.tabs.Tab | undefined
+let uiWindow: chrome.windows.Window | undefined
+
 let settings: Settings = {
     muted: false,
     format: 'webm',
@@ -14,11 +17,24 @@ chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.sync.set({ settings })
 })
 
+function getCurrentTab() {
+    chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+        const tab = tabs.find((tab) => tab.url && !tab.url.startsWith('chrome'))
+        if (tab) currentTab = tab
+    })
+}
+
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     if (request.action === 'GET_SETTINGS') {
         chrome.storage.sync.get('settings', (result) => {
             sendResponse(result.settings || settings)
         })
+        return true
+    }
+
+    if (request.action === 'GET_CURRENT_TAB') {
+        getCurrentTab()
+        sendResponse(currentTab)
         return true
     }
 
@@ -28,4 +44,30 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     chrome.storage.sync.set({ settings })
     sendResponse({ success: true })
     return true
+})
+
+chrome.action.onClicked.addListener(() => {
+    if (uiWindow?.id && !chrome.runtime.lastError) {
+        chrome.windows.update(uiWindow.id, { focused: true })
+    } else {
+        chrome.windows.create(
+            {
+                type: 'popup',
+                width: 350,
+                height: 400,
+                url: `src/index.html?tabId=${currentTab?.id}`
+            },
+            (window) => {
+                uiWindow = window
+            }
+        )
+    }
+})
+
+chrome.tabs.onActivated.addListener(() => getCurrentTab())
+
+chrome.windows.onRemoved.addListener((windowId) => {
+    if (uiWindow?.id === windowId) {
+        uiWindow = undefined
+    }
 })
