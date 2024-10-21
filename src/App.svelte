@@ -42,7 +42,7 @@
 
 <ModeWatcher />
 
-<main class="container mx-auto space-y-4 p-4">
+<main class="container mx-auto max-w-sm space-y-4 p-4">
     {#if audioUrl && isActive}
         <Progress />
     {/if}
@@ -51,7 +51,7 @@
 
 <style>
     :global(body) {
-        width: 350px;
-        height: 400px;
+        width: 325px;
+        height: 385px;
     }
 </style>
