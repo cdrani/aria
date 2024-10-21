@@ -1,7 +1,9 @@
 <script lang="ts">
     import { onMount } from 'svelte'
     import { ModeWatcher } from 'mode-watcher'
+    import type { RecorderState } from '$lib/types'
     import { settings, currentTab } from '$lib/stores'
+    import { recorderStore } from '$lib/stores/recorder'
     import Recorder from '$lib/components/Recorder.svelte'
     import Progress from '$lib/components/Progress.svelte'
 
@@ -16,6 +18,25 @@
 
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
         currentTab.set(tab)
+
+        chrome.runtime.onMessage.addListener((message) => {
+            if (message.action === 'TAB_UPDATED') {
+                currentTab.set(message.data)
+            }
+        })
+    }
+
+    onMount(() => {
+        setUp()
+
+        const unsubscribe = recorderStore.subscribe((state: RecorderState) => {
+            isActive = state.active
+            audioUrl = state.audioUrl
+        })
+
+        return () => {
+            unsubscribe()
+        }
     })
 </script>
 
