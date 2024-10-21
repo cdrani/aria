@@ -3,6 +3,7 @@
     import type { AudioType } from '$lib/types'
     import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
 
+    export let disabled: boolean = false
     function setAudio(selection: string | undefined) {
         audioType.set(selection as AudioType)
     }
@@ -16,6 +17,7 @@
         type="single"
         size="xs"
         value={$audioType}
+        {disabled}
         onValueChange={(value) => setAudio(value)}
     >
         <ToggleGroupItem
