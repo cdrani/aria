@@ -5,7 +5,10 @@
     import Recorder from '$lib/components/Recorder.svelte'
     import Progress from '$lib/components/Progress.svelte'
 
-    onMount(async () => {
+    let isActive = false
+    let audioUrl: string | null = null
+
+    async function setUp() {
         const storedSettings = await chrome.storage.sync.get('settings')
         if (storedSettings.settings) {
             settings.set(storedSettings.settings)
@@ -19,7 +22,9 @@
 <ModeWatcher />
 
 <main class="container mx-auto space-y-4 p-4">
-    <Progress />
+    {#if audioUrl && isActive}
+        <Progress />
+    {/if}
     <Recorder />
 </main>
 
