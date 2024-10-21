@@ -24,6 +24,18 @@ function getCurrentTab() {
     })
 }
 
+chrome.action.onClicked.addListener((tab) => {
+    parentWindowId = tab.windowId
+
+    chrome.windows.create({
+        url: chrome.runtime.getURL('src/index.html'),
+        type: 'popup',
+        width: 350,
+        height: 350,
+        state: 'minimized',
+    })
+})
+
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     if (request.action === 'GET_SETTINGS') {
         chrome.storage.sync.get('settings', (result) => {
