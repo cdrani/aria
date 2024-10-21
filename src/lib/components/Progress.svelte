@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte'
+    import { onMount, onDestroy } from 'svelte'
     import { Button } from './ui/button'
     import WaveSurfer from 'wavesurfer.js'
 
@@ -9,13 +9,17 @@
     let waveformContainer: HTMLDivElement
     let wavesurfer: WaveSurfer
     let isPlaying = false
+    let isActive = false
     let currentTime = 0
     let duration = 0
     let audioUrl: string | null = null
     let isRecording = false
-    let isActive = false
 
-    onMount(() => {
+    function createWaveSurfer() {
+        if (!waveformContainer) return
+
+        if (wavesurfer) wavesurfer.destroy()
+
         wavesurfer = WaveSurfer.create({
             container: waveformContainer,
             waveColor: 'rebeccapurple',
@@ -28,23 +32,37 @@
         wavesurfer.on('pause', () => (isPlaying = false))
         wavesurfer.on('audioprocess', (time) => (currentTime = time))
         wavesurfer.on('ready', () => (duration = wavesurfer.getDuration()))
+        wavesurfer.on('destroy', () => console.log('WaveSurfer destroyed'))
+    }
+
+    onMount(() => {
+        createWaveSurfer()
 
         const unsubscribe = recorderStore.subscribe((state: RecorderState) => {
-            isActive = state.active
             audioUrl = state.audioUrl
             isRecording = state.isRecording
-
+            isActive = state.active
             if (isActive && audioUrl) {
+                if (!wavesurfer) createWaveSurfer()
                 wavesurfer.load(audioUrl)
             } else {
-                wavesurfer.empty()
+                if (audioUrl) URL.revokeObjectURL(audioUrl)
             }
         })
 
         return () => {
-            wavesurfer.destroy()
             unsubscribe()
+            wavesurfer?.unAll()
+            wavesurfer?.destroy()
         }
+    })
+
+    onDestroy(() => {
+        if (wavesurfer) {
+            wavesurfer.unAll()
+            wavesurfer.destroy()
+        }
+        if (audioUrl) URL.revokeObjectURL(audioUrl)
     })
 
     function togglePlayPause() {
@@ -75,14 +93,14 @@
     }
 </script>
 
-<div class="{isActive && audioUrl ? 'block' : 'hidden'} mb-4 w-full rounded-md bg-secondary p-4">
+<div class="mb-4 w-full rounded-md bg-secondary p-4">
     <div bind:this={waveformContainer} class="h-16 w-full rounded-md" />
 
     {#if isRecording}
         <p class="text-xl font-bold text-muted-foreground">{formatTime(duration, true)}</p>
     {/if}
 
-    {#if audioUrl && !isRecording}
+    {#if isActive && audioUrl && !isRecording}
         <div class="flex items-center justify-between">
             <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
             <div class="space-x-2">
