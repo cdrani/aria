@@ -32,15 +32,40 @@ function getCurrentTab() {
     })
 }
 
-chrome.action.onClicked.addListener((tab) => {
-    parentWindowId = tab.windowId
+let popupWindowId: number | undefined
 
-    chrome.windows.create({
-        url: chrome.runtime.getURL('src/index.html'),
-        type: 'popup',
-        width: 325,
-        height: 385
-    })
+chrome.action.onClicked.addListener((tab) => {
+    if (popupWindowId) {
+        // If a popup window already exists, focus on it and update the current tab
+        chrome.windows.update(popupWindowId, { focused: true })
+        parentWindowId = tab.windowId
+        getCurrentTab().then((updatedTab) => {
+            chrome.runtime.sendMessage({ action: 'TAB_UPDATED', data: updatedTab })
+        })
+        return
+    }
+    // If no popup window exists, create a new one
+    parentWindowId = tab.windowId
+    chrome.windows.create(
+        {
+            url: chrome.runtime.getURL('src/index.html'),
+            type: 'popup',
+            width: 325,
+            height: 385
+        },
+        (window) => {
+            if (window) {
+                popupWindowId = window.id
+            }
+        }
+    )
+})
+
+// Add a listener for window removal
+chrome.windows.onRemoved.addListener((windowId) => {
+    if (windowId === popupWindowId) {
+        popupWindowId = undefined
+    }
 })
 
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {

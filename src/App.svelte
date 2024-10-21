@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte'
+    import { Input } from '$lib/components/ui/input'
     import { ModeWatcher } from 'mode-watcher'
     import type { RecorderState } from '$lib/types'
     import { settings, currentTab } from '$lib/stores'
@@ -16,8 +17,8 @@
             settings.set(storedSettings.settings)
         }
 
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-        currentTab.set(tab)
+        const tab = await chrome.runtime.sendMessage({ action: 'GET_CURRENT_TAB' })
+        if (tab) currentTab.set(tab)
 
         chrome.runtime.onMessage.addListener((message) => {
             if (message.action === 'TAB_UPDATED') {
@@ -43,6 +44,10 @@
 <ModeWatcher />
 
 <main class="container mx-auto max-w-sm space-y-4 p-4">
+    <Input
+        placeholder="Tab name"
+        value={$currentTab?.title ?? 'Cannot record audio from this tab'}
+    />
     {#if audioUrl && isActive}
         <Progress />
     {/if}
