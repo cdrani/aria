@@ -52,8 +52,7 @@
 
 <div class="flex flex-col space-y-4 rounded-md border-2 border-secondary p-4">
     <div class="flex items-center justify-between">
-        <AudioSelect />
-
+        <AudioSelect disabled={isActive} />
         <ToggleMute />
     </div>
 
