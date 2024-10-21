@@ -1,7 +1,7 @@
 import type { Settings } from './lib/types'
 
+let parentWindowId: number | undefined
 let currentTab: chrome.tabs.Tab | undefined
-let uiWindow: chrome.windows.Window | undefined
 
 let settings: Settings = {
     muted: false,
@@ -18,9 +18,17 @@ chrome.runtime.onInstalled.addListener(() => {
 })
 
 function getCurrentTab() {
-    chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
-        const tab = tabs.find((tab) => tab.url && !tab.url.startsWith('chrome'))
-        if (tab) currentTab = tab
+    return new Promise<chrome.tabs.Tab | undefined>((resolve) => {
+        if (!parentWindowId) {
+            resolve(undefined)
+            return
+        }
+
+        chrome.tabs.query({ active: true, windowId: parentWindowId }, (tabs: chrome.tabs.Tab[]) => {
+            const tab = tabs.find((tab) => tab.url && !tab.url.startsWith('chrome'))
+            chrome.runtime.sendMessage({ action: 'TAB_UPDATED', data: tab })
+            resolve(tab)
+        })
     })
 }
 
@@ -45,8 +53,10 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     }
 
     if (request.action === 'GET_CURRENT_TAB') {
-        getCurrentTab()
-        sendResponse(currentTab)
+        getCurrentTab().then((tab) => {
+            currentTab = tab
+            sendResponse(currentTab)
+        })
         return true
     }
 
@@ -56,30 +66,4 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     chrome.storage.sync.set({ settings })
     sendResponse({ success: true })
     return true
-})
-
-chrome.action.onClicked.addListener(() => {
-    if (uiWindow?.id && !chrome.runtime.lastError) {
-        chrome.windows.update(uiWindow.id, { focused: true })
-    } else {
-        chrome.windows.create(
-            {
-                type: 'popup',
-                width: 350,
-                height: 400,
-                url: `src/index.html?tabId=${currentTab?.id}`
-            },
-            (window) => {
-                uiWindow = window
-            }
-        )
-    }
-})
-
-chrome.tabs.onActivated.addListener(() => getCurrentTab())
-
-chrome.windows.onRemoved.addListener((windowId) => {
-    if (uiWindow?.id === windowId) {
-        uiWindow = undefined
-    }
 })
