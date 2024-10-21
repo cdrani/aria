@@ -13,6 +13,8 @@ export default class AudioRecorder {
     private onDataAvailable: (audioUrl: string | null) => void = () => {}
 
     async initialize(type: AudioType, settings: Settings) {
+        if (this.mediaRecorder) this.discardRecording()
+
         this.type = type
         this.settings = settings
         if (this.type === 'tab') {
@@ -99,7 +101,6 @@ export default class AudioRecorder {
         }
 
         this.mediaRecorder.onstop = () => {
-            this.chunks = []
             this.mediaRecorder = null
             this.releaseStream()
         }
@@ -140,6 +141,7 @@ export default class AudioRecorder {
 
     discardRecording() {
         if (this.isRecording) this.stopRecording()
+        this.chunks = []
         this.onDataAvailable(null)
     }
 
