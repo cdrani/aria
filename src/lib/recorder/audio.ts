@@ -6,13 +6,10 @@ export default class AudioRecorder {
     private mediaRecorder: MediaRecorder | null = null
     private chunks: Blob[] = []
     private stream: MediaStream | null = null
-    public isRecording = false
-    public isPaused = false
     public isMuted = false
     private audioPlayer: HTMLAudioElement | null = null
     private tabId: number | null = null
     private settings: Settings | null = null
-    private discarding: boolean = false
     private onDataAvailable: (audioUrl: string | null) => void = () => {}
 
     async initialize(type: AudioType, settings: Settings) {
@@ -23,6 +20,16 @@ export default class AudioRecorder {
         } else if (this.type === 'mic') {
             await this.captureMicrophoneAudio()
         }
+    }
+
+    get isRecording() {
+        return this.mediaRecorder
+            ? this.mediaRecorder.state === 'recording' || this.isPaused
+            : false
+    }
+
+    get isPaused() {
+        return this.mediaRecorder ? this.mediaRecorder.state === 'paused' : false
     }
 
     private async captureMicrophoneAudio() {
@@ -92,10 +99,9 @@ export default class AudioRecorder {
         }
 
         this.mediaRecorder.onstop = () => {
-            if (!this.discarding) {
-                this.onRecordingComplete()
-            }
-            this.discarding = false
+            this.chunks = []
+            this.mediaRecorder = null
+            this.releaseStream()
         }
     }
 
@@ -103,31 +109,24 @@ export default class AudioRecorder {
         if (!(this.mediaRecorder && !this.isRecording)) return
 
         this.mediaRecorder.start(1000)
-        this.isRecording = true
     }
 
-    stopRecording(discarding: boolean = false) {
+    stopRecording() {
         if (!(this.mediaRecorder && this.isRecording)) return
 
-        this.discarding = discarding
-        this.mediaRecorder.stop()
-        this.isRecording = false
-        this.isPaused = false
-        this.releaseStream()
+        this.mediaRecorder?.stop()
     }
 
     pauseRecording() {
-        if (!(this.mediaRecorder && this.isRecording && !this.isPaused)) return
+        if (this.isPaused) return
 
-        this.mediaRecorder.pause()
-        this.isPaused = true
+        this.mediaRecorder?.pause()
     }
 
     resumeRecording() {
-        if (!(this.mediaRecorder && this.isRecording && this.isPaused)) return
+        if (!this.isPaused) return
 
-        this.mediaRecorder.resume()
-        this.isPaused = false
+        this.mediaRecorder?.resume()
     }
 
     toggleMute() {
@@ -136,20 +135,12 @@ export default class AudioRecorder {
         this.isMuted = !this.isMuted
         this.stream.getAudioTracks().forEach((track) => (track.enabled = !this.isMuted))
 
-        if (this.audioPlayer) {
-            this.audioPlayer.muted = this.isMuted
-        }
+        if (this.audioPlayer) this.audioPlayer.muted = this.isMuted
     }
 
     discardRecording() {
-        if (this.isRecording) this.stopRecording(true)
-        this.chunks = []
-        this.mediaRecorder = null
-        this.onDataAvailable(null) // Explicitly call onDataAvailable with null
-    }
-
-    private onRecordingComplete() {
-        this.releaseStream()
+        if (this.isRecording) this.stopRecording()
+        this.onDataAvailable(null)
     }
 
     private async createAudioPlayer() {
