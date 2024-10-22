@@ -2,7 +2,9 @@
     import { onMount, onDestroy } from 'svelte'
     import { Button } from './ui/button'
     import WaveSurfer from 'wavesurfer.js'
-
+    import { Slider } from './ui/slider'
+    import { Switch } from './ui/switch'
+    import { Label } from './ui/label'
     import type { RecorderState } from '$lib/types'
     import { recorderStore } from '$lib/stores/recorder'
 
@@ -14,6 +16,9 @@
     let duration = 0
     let audioUrl: string | null = null
     let isRecording = false
+    let volume = 1
+    let preservePitch = false
+    let playbackRate = 1.0
 
     function createWaveSurfer() {
         if (!waveformContainer) return
@@ -36,7 +41,11 @@
         wavesurfer.on('play', () => (isPlaying = true))
         wavesurfer.on('pause', () => (isPlaying = false))
         wavesurfer.on('audioprocess', (time) => (currentTime = time))
-        wavesurfer.on('ready', () => (duration = wavesurfer.getDuration()))
+        wavesurfer.on('ready', () => {
+            duration = wavesurfer.getDuration()
+            // wavesurfer.setVolume(volume)
+            // wavesurfer.setPlaybackRate(playbackRate, preservePitch)
+        })
     }
 
     onMount(() => {
@@ -56,8 +65,6 @@
 
         return () => {
             unsubscribe()
-            wavesurfer?.unAll()
-            wavesurfer?.destroy()
         }
     })
 
@@ -97,9 +104,33 @@
         }
         return shortTime
     }
+
+    function handleVolumeChange(value: number[]) {
+        volume = value[0]
+        if (wavesurfer) {
+            wavesurfer.setVolume(volume)
+        }
+    }
+
+    function handlePreservePitchToggle(checked: boolean) {
+        preservePitch = checked
+        if (wavesurfer) {
+            wavesurfer.setPlaybackRate(playbackRate, preservePitch)
+        }
+    }
+
+    function handlePlaybackRateChange(value: number[]) {
+        playbackRate = value[0]
+        if (wavesurfer) {
+            wavesurfer.setPlaybackRate(playbackRate, preservePitch)
+            wavesurfer.setOptions({
+                audioRate: playbackRate
+            })
+        }
+    }
 </script>
 
-<div class="w-full space-y-2 rounded-md bg-secondary p-4">
+<div class="w-full space-y-2 rounded-md border-2 border-secondary p-4">
     <div bind:this={waveformContainer} class="h-14 w-full rounded-md" />
 
     {#if isRecording}
@@ -200,6 +231,45 @@
                         ><path d="M3 2v6h6"></path><path d="M3 13a9 9 0 1 0 3-7.7L3 8"></path></svg
                     >
                 </Button>
+            </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-5 space-y-3">
+            <div class="col-span-5 flex items-center space-x-2">
+                <span class="text-sm">Volume</span>
+                <Slider
+                    value={[volume]}
+                    onValueChange={handleVolumeChange}
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    class="w-full"
+                />
+                <span class="pl-1 text-sm">{(volume * 100).toFixed()}%</span>
+            </div>
+
+            <div class="col-span-1 grid items-center space-y-2">
+                <Switch
+                    id="preserve-pitch"
+                    checked={preservePitch}
+                    onCheckedChange={handlePreservePitchToggle}
+                />
+                <Label for="preserve-pitch" class="text-sm">Pitch</Label>
+            </div>
+
+            <div class="col-span-4 ml-1.5 grid items-center space-y-3">
+                <div class="flex items-center space-x-3">
+                    <Slider
+                        value={[playbackRate]}
+                        onValueChange={handlePlaybackRateChange}
+                        min={0.25}
+                        max={4}
+                        step={0.01}
+                        class="w-full"
+                    />
+                    <span class="text-sm">{playbackRate.toFixed(2).padEnd(1, '0')}x</span>
+                </div>
+                <span class="text-sm">Speed</span>
             </div>
         </div>
     {/if}
