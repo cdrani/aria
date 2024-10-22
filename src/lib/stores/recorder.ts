@@ -5,15 +5,17 @@ import AudioRecorder from '$lib/recorder/audio'
 import { audioType, settings } from '$lib/stores'
 import type { Settings, RecorderState, AudioType } from '$lib/types'
 
+const initialState: RecorderState = {
+    audioUrl: null,
+    active: false,
+    isMuted: false,
+    isPaused: false,
+    isRecording: false,
+}
+
 function createRecorderStore() {
     const recorder = new AudioRecorder()
-    const { subscribe, update } = writable<RecorderState>({
-        active: false,
-        isMuted: false,
-        isPaused: false,
-        isRecording: false,
-        audioUrl: null as string | null
-    })
+    const { subscribe, update } = writable<RecorderState>(initialState)
 
     recorder.setOnDataAvailable((audioUrl: string | null) => {
         update((state) => ({ ...state, audioUrl }))
@@ -51,13 +53,7 @@ function createRecorderStore() {
         },
         discard: () => {
             recorder.discardRecording()
-            update(() => ({
-                active: false,
-                audioUrl: null,
-                isRecording: false,
-                isPaused: false,
-                isMuted: false
-            }))
+            update(() => initialState)
         },
         toggleMute: () => {
             recorder.toggleMute()
@@ -65,7 +61,7 @@ function createRecorderStore() {
         },
         cleanup: () => {
             recorder.cleanup()
-            update(() => ({ isRecording: false, isPaused: false, isMuted: false, audioUrl: null }))
+            update(() => initialState)
         },
         download: async (fileName: string) => {
             try {
