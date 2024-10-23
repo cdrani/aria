@@ -13,6 +13,7 @@
 
     export let small: boolean = false
 
+    let isLoading: Writable<boolean> = writable(false)
     let filename: Writable<string> = writable($currentTab?.title || 'N/A')
 
     function updateFilename(event: Event) {
@@ -25,9 +26,16 @@
     }
 
     async function handleDownload() {
+        isLoading.set(true)
         initEncoderWorker()
         const fileName = formatFilename($filename)
-        await recorderStore.download(fileName)
+        try {
+            await recorderStore.download(fileName)
+        } catch (error) {
+            console.error(`Download failed: ${error}`)
+        } finally {
+            isLoading.set(false)
+        }
     }
 </script>
 
@@ -58,17 +66,22 @@
         </div>
     </Dialog.Trigger>
 
-    <Dialog.Content class="max-w-[90%] p-4">
+    <Dialog.Content class="max-w-[90%] p-3">
         <Dialog.Header>
             <Dialog.Title class="text-left">Save Recording</Dialog.Title>
             <Dialog.Description class="text-left">
-                Save recording to device. Set file name and format.
+                Save recording to device. Set file name and select format.
             </Dialog.Description>
         </Dialog.Header>
         <div class="space-y-2">
             <div class="grid w-full max-w-xs items-center gap-1.5">
                 <Label for="url">name</Label>
-                <Input id="url" class="truncate" value={$filename} on:input={updateFilename} />
+                <Input
+                    id="url"
+                    value={$filename}
+                    on:input={updateFilename}
+                    class="h-7 truncate px-2 text-xs"
+                />
             </div>
             <div class="pt-2">
                 <DownloadSettings />
@@ -77,9 +90,32 @@
         <Dialog.Footer class="space-y-2">
             <div class="flex w-full justify-end gap-2">
                 <Dialog.Close>
-                    <Button variant="secondary">Close</Button>
+                    <Button variant="secondary" size="sm">Close</Button>
                 </Dialog.Close>
-                <Button on:click={handleDownload}>Download</Button>
+                <Button on:click={handleDownload} disabled={$isLoading} size="sm">
+                    {#if $isLoading}
+                        <svg
+                            class="-ml-1 mr-3 h-5 w-5 animate-spin"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"
+                            ></circle>
+                            <path
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                        </svg>
+                    {/if}
+                    Download
+                </Button>
             </div>
         </Dialog.Footer>
     </Dialog.Content>
