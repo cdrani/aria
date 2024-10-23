@@ -133,19 +133,21 @@
     }
 </script>
 
-<div class="w-full space-y-2 rounded-md border-2 border-secondary p-4">
+<div class="w-full space-y-3 rounded-md border-2 border-secondary p-3">
     {#if !isRecording}
-        <div class="flex items-center justify-end space-x-2">
+        <div class="flex items-center justify-end space-x-3">
             <DiscardButton small />
             <DownloadDialog small />
         </div>
     {/if}
 
-    <div class="flex flex-col justify-between">
+    <div class="flex flex-col justify-between space-y-3">
         <div bind:this={waveformContainer} class="h-14 w-full rounded-md" />
 
         {#if isRecording}
-            <p class="text-lg font-bold text-muted-foreground">{formatTime(duration)}</p>
+            <p class="text-base font-semibold leading-4 text-muted-foreground">
+                {formatTime(duration)}
+            </p>
         {/if}
 
         {#if !isRecording}
@@ -156,7 +158,12 @@
                     <p class="text-sm text-muted-foreground">{formatTime(duration)}</p>
                 </div>
                 <div class="space-x-2">
-                    <Button on:click={skipBackward} class="h-8 w-8" variant="outline" size="icon">
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        on:click={skipBackward}
+                        class="h-7 w-7 text-muted-foreground"
+                    >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="16"
@@ -176,10 +183,10 @@
                         >
                     </Button>
                     <Button
-                        on:click={togglePlayPause}
-                        class="h-8 w-8"
-                        variant="outline"
                         size="icon"
+                        variant="outline"
+                        on:click={togglePlayPause}
+                        class="h-7 w-7 text-muted-foreground"
                     >
                         {#if isPlaying}
                             <svg
@@ -214,7 +221,12 @@
                             >
                         {/if}
                     </Button>
-                    <Button on:click={skipForward} class="h-8 w-8" variant="outline" size="icon">
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        on:click={skipForward}
+                        class="h-7 w-7 text-muted-foreground"
+                    >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="16"
@@ -233,7 +245,12 @@
                             ></line></svg
                         >
                     </Button>
-                    <Button on:click={restart} class="h-8 w-8" variant="outline" size="icon">
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        on:click={restart}
+                        class="h-7 w-7 text-muted-foreground"
+                    >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="16"
@@ -253,7 +270,7 @@
 
             <div class="mt-4 grid grid-cols-5 space-y-3">
                 <div class="col-span-5 flex items-center space-x-2">
-                    <span class="text-sm">Volume</span>
+                    <span class="text-sm text-muted-foreground">Volume</span>
                     <Slider
                         value={[volume]}
                         onValueChange={handleVolumeChange}
@@ -262,7 +279,9 @@
                         step={0.01}
                         class="w-full"
                     />
-                    <span class="pl-1 text-sm">{(volume * 100).toFixed()}%</span>
+                    <span class="pl-1 text-sm text-muted-foreground"
+                        >{(volume * 100).toFixed()}%</span
+                    >
                 </div>
 
                 <div class="col-span-1 grid items-center space-y-2">
@@ -271,7 +290,7 @@
                         checked={preservePitch}
                         onCheckedChange={handlePreservePitchToggle}
                     />
-                    <Label for="preserve-pitch" class="text-sm">Pitch</Label>
+                    <Label for="preserve-pitch" class="text-sm text-muted-foreground">Pitch</Label>
                 </div>
 
                 <div class="col-span-4 ml-1.5 grid items-center space-y-3">
@@ -284,9 +303,11 @@
                             step={0.01}
                             class="w-full"
                         />
-                        <span class="text-sm">{playbackRate.toFixed(2).padEnd(1, '0')}x</span>
+                        <span class="text-sm text-muted-foreground"
+                            >{playbackRate.toFixed(2).padEnd(1, '0')}x</span
+                        >
                     </div>
-                    <span class="text-sm">Speed</span>
+                    <span class="text-sm text-muted-foreground">Speed</span>
                 </div>
             </div>
         {/if}

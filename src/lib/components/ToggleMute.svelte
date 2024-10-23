@@ -16,7 +16,7 @@
 
 <Toggle
     size="sm"
-    class="h-8 w-8"
+    class="h-6 w-6 p-0"
     aria-label="toggle mute"
     pressed={$settings.muted}
     onPressedChange={handleToggle}

@@ -44,7 +44,7 @@
     })
 </script>
 
-<div class="flex flex-col space-y-4 rounded-md border-2 border-secondary p-4">
+<div class="flex w-full flex-col space-y-3 rounded-md border-2 border-secondary p-3">
     <div class="flex items-center justify-between">
         <AudioSelect disabled={isActive} />
         <ToggleMute />
@@ -80,7 +80,7 @@
                         />
                     </svg>
                 </Button>
-                <Label for="left-button">Stop</Label>
+                <Label for="left-button" class="text-xs text-muted-foreground">stop</Label>
             {:else}
                 <DownloadDialog />
             {/if}
@@ -151,14 +151,14 @@
                     </svg>
                 {/if}
             </Button>
-            <Label for="middle-button"
-                >{isRecording ? (isPaused ? 'Resume' : 'Pause') : 'Record'}</Label
-            >
+            <Label for="middle-button" class="text-xs text-muted-foreground">
+                {isRecording ? (isPaused ? 'resume' : 'pause') : 'record'}
+            </Label>
         </div>
 
         <div class="grid max-w-sm place-items-center gap-2">
             <DiscardButton id="right-button" />
-            <Label for="right-button">Discard</Label>
+            <Label for="right-button" class="text-xs text-muted-foreground">trash</Label>
         </div>
     </div>
 </div>
