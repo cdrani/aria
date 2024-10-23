@@ -6,7 +6,7 @@
 
     export let label: string
     export let selected: Selection
-    export let placeholder: string = 'Select a value'
+    export let placeholder: string = 'select a value'
     export let data: Array<{ label: string; value: number | string | boolean }> = []
     export let handleChange: ({
         key,
@@ -25,18 +25,17 @@
 
 <Select.Root
     selected={$selection}
-    preventScroll={false}
     onSelectedChange={(select) =>
         handleChange({ key: label, data: { value: select?.value, label: select?.label } })}
 >
-    <Select.Trigger class="w-180px">
+    <Select.Trigger class="w-180px h-8 p-2 text-xs">
         <Select.Value {placeholder} />
     </Select.Trigger>
-    <Select.Content class="max-h-[120px] overflow-y-scroll">
+    <Select.Content class="max-h-[100px] overflow-y-scroll">
         <Select.Group>
-            <Select.Label class="capitalize">{label}</Select.Label>
+            <Select.Label class="text-xs capitalize text-muted-foreground">{label}</Select.Label>
             {#each data as item, index}
-                <Select.Item value={item.value} label={item.label}>
+                <Select.Item class="text-xs" value={item.value} label={item.label}>
                     {item.label}
                 </Select.Item>
                 {#if index !== data.length - 1}
@@ -45,5 +44,5 @@
             {/each}
         </Select.Group>
     </Select.Content>
-    <Select.Input name={label.toLowerCase()} />
+    <Select.Input name={label.toLowerCase()} class="h-7 text-xs text-muted-foreground" />
 </Select.Root>

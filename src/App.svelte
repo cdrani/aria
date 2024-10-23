@@ -1,7 +1,9 @@
 <script lang="ts">
     import { onMount } from 'svelte'
-    import { Input } from '$lib/components/ui/input'
     import { ModeWatcher } from 'mode-watcher'
+
+    import { Label } from '$lib/components/ui/label'
+    import { Input } from '$lib/components/ui/input'
     import type { RecorderState } from '$lib/types'
     import { settings, currentTab } from '$lib/stores'
     import { recorderStore } from '$lib/stores/recorder'
@@ -46,11 +48,14 @@
 
 <ModeWatcher />
 
-<main class="container mx-auto max-w-sm space-y-4 p-4">
-    <Input
-        placeholder="Tab name"
-        value={$currentTab?.title ?? 'Cannot record audio from this tab'}
-    />
+<main class="mx-auto flex w-full max-w-sm flex-col space-y-3 p-3">
+    <div class="grid w-full items-center gap-0.5">
+        <Input
+            disabled
+            class="h-7 w-full truncate px-2 text-xs"
+            value={$currentTab?.title ?? 'Cannot record audio from this tab'}
+        />
+    </div>
     {#if isActive}
         <Progress />
     {/if}
@@ -60,8 +65,7 @@
 </main>
 
 <style>
-    :global(body) {
-        width: 325px;
-        height: 385px;
+    main {
+        @apply flex h-[400px] w-[275px] flex-col items-center;
     }
 </style>

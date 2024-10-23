@@ -50,7 +50,7 @@ chrome.action.onClicked.addListener((tab) => {
         {
             url: chrome.runtime.getURL('src/index.html'),
             type: 'popup',
-            width: 325,
+            width: 275,
             height: 385
         },
         (window) => {

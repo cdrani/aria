@@ -23,7 +23,7 @@
         <ToggleGroupItem
             value="tab"
             disabled={isTab}
-            class="px-2 py-0.5"
+            class="px-2 py-0.5 text-xs text-muted-foreground"
             aria-label="toggle tab audio"
         >
             tab
@@ -31,7 +31,7 @@
         <ToggleGroupItem
             value="mic"
             disabled={isMic}
-            class="px-2 py-0.5"
+            class="px-2 py-0.5 text-xs text-muted-foreground"
             aria-label="toggle mic audio"
         >
             mic
