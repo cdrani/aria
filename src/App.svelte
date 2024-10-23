@@ -9,6 +9,7 @@
     import Progress from '$lib/components/Progress.svelte'
 
     let isActive = false
+    let isRecording = false
     let audioUrl: string | null = null
 
     async function setUp() {
@@ -33,10 +34,12 @@
         const unsubscribe = recorderStore.subscribe((state: RecorderState) => {
             isActive = state.active
             audioUrl = state.audioUrl
+            isRecording = state.isRecording
         })
 
         return () => {
             unsubscribe()
+            recorderStore.cleanup()
         }
     })
 </script>
@@ -48,10 +51,12 @@
         placeholder="Tab name"
         value={$currentTab?.title ?? 'Cannot record audio from this tab'}
     />
-    {#if audioUrl && isActive}
+    {#if isActive}
         <Progress />
     {/if}
-    <Recorder />
+    {#if !isActive || (isActive && isRecording)}
+        <Recorder />
+    {/if}
 </main>
 
 <style>

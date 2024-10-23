@@ -10,7 +10,7 @@ const initialState: RecorderState = {
     active: false,
     isMuted: false,
     isPaused: false,
-    isRecording: false,
+    isRecording: false
 }
 
 function createRecorderStore() {
@@ -30,6 +30,7 @@ function createRecorderStore() {
             update((state) => ({ ...state, isMuted: currentSettings.muted }))
         },
         start: () => {
+            recorder.cleanup()
             recorder.startRecording()
             update((state) => ({
                 ...state,
